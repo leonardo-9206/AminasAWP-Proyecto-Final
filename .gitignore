@@ -1,0 +1,12 @@
+# Documentación interna de desarrollo y diseño (privada)
+docsprivados/
+
+# Archivos comprimidos y respaldos
+*.rar
+*.zip
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

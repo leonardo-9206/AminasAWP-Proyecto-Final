@@ -1,11 +1,15 @@
-const CACHE_NAME = 'aminas-pwa-v9';
+const CACHE_NAME = 'aminas-pwa-v10';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
-  './app.js',
   './manifest.json',
-  './icono.png'
+  './icono.png',
+  './js/main.js',
+  './js/core/catalogoMedicamentos.js',
+  './js/core/calculoFisiologico.js',
+  './js/data/storageRepository.js',
+  './js/controllers/calculadoraController.js'
 ];
 
 self.addEventListener('install', event => {
