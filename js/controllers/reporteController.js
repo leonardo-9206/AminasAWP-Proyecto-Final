@@ -70,15 +70,17 @@ export class ReporteController {
     /**
      * Abre el modal y renderiza el reporte del paciente proporcionado.
      * @param {Object} patient
+     * @param {Object} activeUser - Profesional emisor activo
      */
-    open(patient) {
+    open(patient, activeUser = null) {
         if (!patient) return;
 
         this.currentPatient = patient;
+        this.activeUser = activeUser;
         this.activeMeds = getActiveInfusionsForReport(patient);
 
         if (this.modalContent) {
-            this.modalContent.innerHTML = renderReportCardHtml(patient, this.activeMeds);
+            this.modalContent.innerHTML = renderReportCardHtml(patient, this.activeMeds, new Date(), this.activeUser);
         }
 
         if (this.modalOverlay) {
@@ -109,7 +111,7 @@ export class ReporteController {
         const notesEl = document.getElementById('report-custom-notes');
         const customNotes = notesEl ? notesEl.value : '';
 
-        const textToCopy = generateWhatsAppReportText(this.currentPatient, this.activeMeds, customNotes);
+        const textToCopy = generateWhatsAppReportText(this.currentPatient, this.activeMeds, customNotes, this.activeUser);
 
         let success = false;
         if (navigator.clipboard && navigator.clipboard.writeText) {

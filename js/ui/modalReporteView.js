@@ -22,7 +22,7 @@ export function getActiveInfusionsForReport(patient) {
 /**
  * Genera el HTML de la Ficha Médica / Ticket de entrega de turno.
  */
-export function renderReportCardHtml(patient, activeMeds, emissionDate = new Date()) {
+export function renderReportCardHtml(patient, activeMeds, emissionDate = new Date(), activeUser = null) {
     const fecha = emissionDate.toLocaleDateString('es-MX', {
         year: 'numeric',
         month: 'long',
@@ -145,8 +145,10 @@ export function renderReportCardHtml(patient, activeMeds, emissionDate = new Dat
 
             <footer class="report-ticket-footer">
                 <div class="signature-block">
-                    <div class="signature-line"></div>
-                    <span class="signature-label">Firma y Cédula del Profesional Emisor</span>
+                    <div class="signature-line">
+                        ${activeUser ? `<span class="signature-text">${activeUser.nombre} (Céd. ${activeUser.cedula})</span>` : ''}
+                    </div>
+                    <span class="signature-label">Firma: ${activeUser ? activeUser.rolLabel : 'Profesional Emisor'}</span>
                 </div>
                 <div class="signature-block">
                     <div class="signature-line"></div>
@@ -160,7 +162,7 @@ export function renderReportCardHtml(patient, activeMeds, emissionDate = new Dat
 /**
  * Genera el texto estructurado con formato enriquecido para WhatsApp.
  */
-export function generateWhatsAppReportText(patient, activeMeds, customNotes = '') {
+export function generateWhatsAppReportText(patient, activeMeds, customNotes = '', activeUser = null) {
     const now = new Date();
     const fecha = now.toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
     const hora = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
@@ -173,6 +175,9 @@ export function generateWhatsAppReportText(patient, activeMeds, customNotes = ''
     text += `👶 *Paciente:* ${patient.name || 'Paciente 1'}\n`;
     text += `⚖️ *Peso:* ${pesoTexto}\n`;
     text += `📅 *Fecha/Hora:* ${fecha} - ${hora}\n`;
+    if (activeUser) {
+        text += `👤 *Emisor:* ${activeUser.nombre} (${activeUser.rolLabel} | Céd. ${activeUser.cedula})\n`;
+    }
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `💉 *INFUSIONES ACTIVAS (${activeMeds.length}):*\n`;
 

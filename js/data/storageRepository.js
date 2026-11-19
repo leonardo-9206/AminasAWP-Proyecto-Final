@@ -142,11 +142,18 @@ export class StorageRepository {
     static getActiveUser() {
         const saved = localStorage.getItem(STORAGE_KEYS.AUTH_DATA);
         if (!saved) {
-            return {
+            const defaultUser = {
                 id: 1,
-                nombre: 'Dr. Pediatra Guardia',
-                rol: 'MEDICO_PEDIATRA'
+                nombre: 'Dr. Alejandro Morales',
+                cedula: '9845210',
+                rol: 'MEDICO_PEDIATRA',
+                rolLabel: 'Médico Pediatra Intensivista',
+                especialidad: 'Terapia Intensiva Pediátrica (UCIP)',
+                avatar: '👨‍⚕️',
+                turno: 'Matutino'
             };
+            this.setActiveUser(defaultUser);
+            return defaultUser;
         }
         try {
             return JSON.parse(saved);

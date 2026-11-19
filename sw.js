@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aminas-pwa-v13';
+const CACHE_NAME = 'aminas-pwa-v14';
 const urlsToCache = [
   './',
   './index.html',
@@ -9,14 +9,17 @@ const urlsToCache = [
   './js/core/catalogoMedicamentos.js',
   './js/core/calculoFisiologico.js',
   './js/core/agendaService.js',
+  './js/core/authService.js',
   './js/data/storageRepository.js',
   './js/ui/dashboardView.js',
   './js/ui/modalReporteView.js',
   './js/ui/citasView.js',
+  './js/ui/authView.js',
   './js/controllers/dashboardController.js',
   './js/controllers/calculadoraController.js',
   './js/controllers/reporteController.js',
-  './js/controllers/citasController.js'
+  './js/controllers/citasController.js',
+  './js/controllers/authController.js'
 ];
 
 self.addEventListener('install', event => {

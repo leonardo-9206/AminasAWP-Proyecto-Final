@@ -9,11 +9,21 @@ import { DashboardController } from './controllers/dashboardController.js';
 import { CalculadoraController } from './controllers/calculadoraController.js';
 import { ReporteController } from './controllers/reporteController.js';
 import { CitasController } from './controllers/citasController.js';
+import { AuthController } from './controllers/authController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const viewDashboard = document.getElementById('view-dashboard');
     const viewCalculadora = document.getElementById('view-calculadora');
     const viewCitas = document.getElementById('view-citas');
+
+    // Inicializar controlador de Autenticación y Perfiles
+    const authCtrl = new AuthController({
+        onUserChanged: () => {
+            dashboardCtrl.render();
+            citasCtrl.render();
+        }
+    });
+    authCtrl.init();
 
     // Inicializar controlador de Reporte y Entrega de Guardia
     const reporteCtrl = new ReporteController();
@@ -57,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showView('dashboard');
         },
         onGenerarReporte: (patient) => {
-            reporteCtrl.open(patient);
+            reporteCtrl.open(patient, authCtrl.getActiveUser());
         },
         onNavigateToCitas: () => {
             showView('citas');
