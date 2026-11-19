@@ -107,9 +107,41 @@
                 </div>
                 <div class="actions">
                     <button id="btn-add-row" class="btn btn-primary">+ Agregar Medicamento</button>
+                    <button id="btn-generar-reporte" class="btn btn-report">📄 Generar Reporte / Entrega de Guardia</button>
                 </div>
             </section>
         </section>
+    </div>
+
+    <!-- MODAL: REPORTE Y ENTREGA DE GUARDIA -->
+    <div id="modal-reporte" class="modal-overlay" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-icon">📄</span>
+                    <h2>Reporte de Guardia / Ficha Médica</h2>
+                </div>
+                <button id="btn-modal-close" class="modal-close-btn" title="Cerrar ventana">✕</button>
+            </div>
+
+            <div class="modal-body" id="modal-reporte-content">
+                <!-- Se inyecta dinámicamente el ticket / ficha médica -->
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-modal-copy-whatsapp" class="btn btn-whatsapp" title="Copiar resumen en formato listo para WhatsApp">
+                    <span class="btn-icon">📋</span> Copiar para WhatsApp
+                </button>
+                <button id="btn-modal-print-pdf" class="btn btn-primary" title="Imprimir reporte o guardar como PDF">
+                    <span class="btn-icon">🖨️</span> Imprimir / Guardar PDF
+                </button>
+                <button id="btn-modal-cancel" class="btn btn-secondary">
+                    Cerrar
+                </button>
+            </div>
+
+            <div id="copy-feedback-toast" class="copy-toast" style="display: none;"></div>
+        </div>
     </div>
 
     <script type="module" src="js/main.js"></script>

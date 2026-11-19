@@ -7,10 +7,14 @@
 
 import { DashboardController } from './controllers/dashboardController.js';
 import { CalculadoraController } from './controllers/calculadoraController.js';
+import { ReporteController } from './controllers/reporteController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const viewDashboard = document.getElementById('view-dashboard');
     const viewCalculadora = document.getElementById('view-calculadora');
+
+    // Inicializar controlador de Reporte y Entrega de Guardia
+    const reporteCtrl = new ReporteController();
 
     // Función para cambiar de vista con animación suave
     function showView(viewName) {
@@ -31,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
         onBackToDashboard: () => {
             dashboardCtrl.render();
             showView('dashboard');
+        },
+        onGenerarReporte: (patient) => {
+            reporteCtrl.open(patient);
         }
     });
 

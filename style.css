@@ -791,3 +791,469 @@ td input:focus, td select:focus {
         justify-content: space-between;
     }
 }
+
+/* ========================================================
+   VISTA 2: MODAL DE REPORTE / ENTREGA DE GUARDIA
+   ======================================================== */
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-report {
+    background-color: #0284c7;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-report:hover {
+    background-color: #0369a1;
+}
+
+.btn-whatsapp {
+    background-color: #25D366;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+}
+
+.btn-whatsapp:hover {
+    background-color: #20ba5a;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Modal Container */
+.modal-container {
+    background-color: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-width: 840px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.97) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: #f8fafc;
+}
+
+.modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-title-group h2 {
+    font-size: 18px;
+    color: var(--text-main);
+    font-weight: 700;
+    margin: 0;
+}
+
+.modal-icon {
+    font-size: 22px;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: #e2e8f0;
+    color: var(--text-main);
+}
+
+.modal-body {
+    padding: 22px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border-color);
+    background-color: #f8fafc;
+    flex-wrap: wrap;
+}
+
+/* Toast de confirmación de copia */
+.copy-toast {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1e293b;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    pointer-events: none;
+    animation: toastFade 0.25s ease-out;
+}
+
+.copy-toast-success {
+    background-color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.copy-toast-warning {
+    background-color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+@keyframes toastFade {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Estructura del Ticket / Ficha Médica */
+.report-ticket {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 24px;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.report-ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #0284c7;
+    margin-bottom: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.report-institution {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.report-cross {
+    font-size: 32px;
+}
+
+.report-inst-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0284c7;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.report-inst-subtitle {
+    font-size: 12px;
+    color: #64748b;
+    margin: 2px 0 0 0;
+}
+
+.report-meta {
+    text-align: right;
+    font-size: 12px;
+    color: #475569;
+}
+
+/* Banner de Datos del Paciente */
+.report-patient-banner {
+    display: flex;
+    justify-content: space-between;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.patient-banner-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.banner-lbl {
+    font-weight: 600;
+    color: #0369a1;
+    font-size: 13px;
+}
+
+.banner-val {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.banner-val.highlight {
+    color: #0284c7;
+    font-size: 16px;
+}
+
+/* Tabla del Reporte */
+.report-table-section {
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.report-table th {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid #cbd5e1;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.report-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.report-table tr:hover {
+    background-color: #f8fafc;
+}
+
+.report-med-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    color: #0f172a;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.report-empty-row {
+    text-align: center !important;
+    padding: 24px !important;
+    color: #b45309;
+    background-color: #fffbeb;
+    font-style: italic;
+}
+
+/* Notas / Observaciones */
+.report-notes-section {
+    margin-bottom: 24px;
+}
+
+.report-notes-label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.report-notes-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #1e293b;
+    background-color: #f8fafc;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.report-notes-input:focus {
+    border-color: #0284c7;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+/* Bloque de Firmas */
+.report-ticket-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.signature-block {
+    flex: 1;
+    text-align: center;
+}
+
+.signature-line {
+    border-bottom: 1px solid #475569;
+    margin-bottom: 6px;
+    height: 40px;
+}
+
+.signature-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* ========================================================
+   ESTILOS DE IMPRESIÓN OFICIAL HOSPITALARIA (@media print)
+   ======================================================== */
+@media print {
+    /* Ocultar todos los elementos de la aplicación web */
+    body * {
+        visibility: hidden !important;
+    }
+
+    /* Mostrar únicamente el contenedor del reporte */
+    #modal-reporte,
+    #modal-reporte * {
+        visibility: visible !important;
+    }
+
+    #modal-reporte {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+        background: transparent !important;
+        display: block !important;
+    }
+
+    .modal-container {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .modal-header,
+    .modal-footer,
+    .copy-toast {
+        display: none !important;
+    }
+
+    .modal-body {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    .report-ticket {
+        border: 1px solid #000000 !important;
+        padding: 16px !important;
+        page-break-inside: avoid;
+    }
+
+    .report-ticket-header {
+        border-bottom: 2px solid #000000 !important;
+    }
+
+    .report-inst-title {
+        color: #000000 !important;
+    }
+
+    .report-patient-banner {
+        border: 1px solid #000000 !important;
+        background-color: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .report-table th {
+        background-color: #f1f5f9 !important;
+        color: #000000 !important;
+        border-bottom: 2px solid #000000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .report-table td {
+        border-bottom: 1px solid #ccc !important;
+    }
+
+    .report-notes-input {
+        border: 1px dashed #666 !important;
+        background: transparent !important;
+    }
+}

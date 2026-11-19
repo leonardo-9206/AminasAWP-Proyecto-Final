@@ -18,6 +18,7 @@ export class CalculadoraController {
         this.pesoInput = document.getElementById('peso');
         this.tableBody = document.getElementById('table-body');
         this.btnAddRow = document.getElementById('btn-add-row');
+        this.btnGenerarReporte = document.getElementById('btn-generar-reporte');
         this.tabsContainer = document.getElementById('tabs-container');
         this.currentPatientName = document.getElementById('current-patient-name');
         this.btnDeletePatient = document.getElementById('btn-delete-patient');
@@ -25,10 +26,12 @@ export class CalculadoraController {
 
         this.appState = StorageRepository.loadAppState(defaultMeds);
         this.onBackToDashboard = null;
+        this.onGenerarReporte = null;
     }
 
     init(options = {}) {
         this.onBackToDashboard = options.onBackToDashboard || null;
+        this.onGenerarReporte = options.onGenerarReporte || null;
         this.setupGlobalEventListeners();
         this.renderTabs();
         this.renderActivePatient();
@@ -58,6 +61,16 @@ export class CalculadoraController {
                 this.saveState();
                 if (typeof this.onBackToDashboard === 'function') {
                     this.onBackToDashboard();
+                }
+            });
+        }
+
+        if (this.btnGenerarReporte) {
+            this.btnGenerarReporte.addEventListener('click', () => {
+                this.saveState();
+                const activePatient = this.getActivePatientData();
+                if (typeof this.onGenerarReporte === 'function') {
+                    this.onGenerarReporte(activePatient);
                 }
             });
         }
@@ -98,6 +111,11 @@ export class CalculadoraController {
         });
     }
 
+    getActivePatientData() {
+        this.saveState();
+        return this.appState.patients.find(p => p.id === this.appState.activePatientId) || this.appState.patients[0];
+    }
+
     saveState() {
         const activePatient = this.appState.patients.find(p => p.id === this.appState.activePatientId);
         if (!activePatient) return;
@@ -107,6 +125,10 @@ export class CalculadoraController {
 
         const rows = this.tableBody.querySelectorAll('tr');
         activePatient.meds = Array.from(rows).map(tr => {
+            const equivInp = tr.querySelector('.inp-equivalencia');
+            const equiv2Inp = tr.querySelector('.inp-equivalencia2');
+            const volFinalInp = tr.querySelector('.inp-vol-final');
+
             return {
                 nombre: tr.querySelector('.inp-med').value,
                 dosis: tr.querySelector('.inp-dosis').value,
@@ -114,9 +136,12 @@ export class CalculadoraController {
                 farmaco: tr.querySelector('.inp-farmaco').value,
                 farmaco_unidad: tr.querySelector('.sel-farmaco-unidad').value,
                 diluyente: tr.querySelector('.inp-diluyente').value,
+                vol_final: volFinalInp ? volFinalInp.value : '',
                 velocidad: tr.querySelector('.inp-velocidad').value,
+                equiv: equivInp ? equivInp.value : '',
                 equiv_unidad: tr.querySelector('.sel-equiv-unidad').value,
                 velocidad2: tr.querySelector('.inp-velocidad2').value,
+                equiv2: equiv2Inp ? equiv2Inp.value : '',
                 equiv_unidad2: tr.querySelector('.sel-equiv-unidad2').value
             };
         });
