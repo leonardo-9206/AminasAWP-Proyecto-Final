@@ -85,6 +85,36 @@ export class AgendaService {
     }
 
     /**
+     * Regla de no empalme: un mismo profesional no puede tener dos citas activas
+     * (Programada o En consulta) en la misma fecha y hora.
+     * @param {Array} citas - Citas existentes
+     * @param {Object} cita - Cita a validar (medicoResponsable, fecha, hora)
+     * @param {number|null} excluirId - ID de la cita que se está editando
+     * @returns {Object|null} La cita con la que se empalma, o null si el horario está libre
+     */
+    static buscarEmpalme(citas, { medicoResponsable, fecha, hora }, excluirId = null) {
+        if (!Array.isArray(citas)) return null;
+        return citas.find(c =>
+            c.id !== excluirId &&
+            c.medicoResponsable === medicoResponsable &&
+            c.fecha === fecha &&
+            c.hora === hora &&
+            (c.estado === ESTADOS_CITA.PROGRAMADA || c.estado === ESTADOS_CITA.EN_CURSO)
+        ) || null;
+    }
+
+    /**
+     * Genera la lista de profesionales que pueden atender citas a partir del catálogo de usuarios.
+     * Excluye al personal de Recepción. Si no hay usuarios, usa la lista de respaldo.
+     */
+    static obtenerMedicosDisponibles(usuarios = []) {
+        const lista = (Array.isArray(usuarios) ? usuarios : [])
+            .filter(u => u.rol !== 'RECEPCION')
+            .map(u => `${u.nombre} — ${u.especialidad}`);
+        return lista.length > 0 ? lista : MEDICOS_DISPONIBLES;
+    }
+
+    /**
      * Genera un nuevo ID numérico correlativo para la cita.
      */
     static generarSiguienteId(citas) {

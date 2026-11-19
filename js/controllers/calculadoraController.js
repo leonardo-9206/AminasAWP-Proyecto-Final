@@ -11,6 +11,7 @@ import {
     calculateDosis,
     calculateEquivalenceBySpeed
 } from '../core/calculoFisiologico.js';
+import { PermisosService, ACCIONES } from '../core/permisosService.js';
 import { StorageRepository } from '../data/storageRepository.js';
 
 export class CalculadoraController {
@@ -176,6 +177,7 @@ export class CalculadoraController {
         addBtn.innerText = '+ Nuevo';
         addBtn.onclick = () => this.createNewPatient();
         this.tabsContainer.appendChild(addBtn);
+        this.applyPermissions();
     }
 
     switchPatient(id) {
@@ -186,7 +188,31 @@ export class CalculadoraController {
         this.renderActivePatient();
     }
 
+    /** Verifica un permiso con el usuario en turno; si no lo tiene, avisa y regresa false. */
+    verificarPermiso(accion) {
+        const usuario = StorageRepository.getActiveUser();
+        if (PermisosService.puede(usuario, accion)) return true;
+        alert(PermisosService.mensajeDenegado(usuario));
+        return false;
+    }
+
+    /** Muestra u oculta controles según el rol del usuario en turno. */
+    applyPermissions() {
+        const usuario = StorageRepository.getActiveUser();
+        if (this.btnDeletePatient) {
+            this.btnDeletePatient.style.display = PermisosService.puede(usuario, ACCIONES.PACIENTE_BAJA) ? '' : 'none';
+        }
+        if (this.btnGenerarReporte) {
+            this.btnGenerarReporte.style.display = PermisosService.puede(usuario, ACCIONES.REPORTE_GENERAR) ? '' : 'none';
+        }
+        const addTab = this.tabsContainer ? this.tabsContainer.querySelector('.tab-add') : null;
+        if (addTab) {
+            addTab.style.display = PermisosService.puede(usuario, ACCIONES.PACIENTE_ALTA) ? '' : 'none';
+        }
+    }
+
     createNewPatient() {
+        if (!this.verificarPermiso(ACCIONES.PACIENTE_ALTA)) return;
         this.saveState();
         const newId = this.appState.nextPatientId++;
         this.appState.patients.push({
@@ -202,6 +228,7 @@ export class CalculadoraController {
     }
 
     deleteCurrentPatient() {
+        if (!this.verificarPermiso(ACCIONES.PACIENTE_BAJA)) return;
         if (this.appState.patients.length === 1) {
             alert('Debe haber al menos un paciente registrado.');
             return;
@@ -209,7 +236,9 @@ export class CalculadoraController {
         if (confirm(`¿Eliminar a ${this.currentPatientName.innerText}?`)) {
             this.appState.patients = this.appState.patients.filter(p => p.id !== this.appState.activePatientId);
             this.appState.activePatientId = this.appState.patients[0].id;
-            this.saveState();
+            // Se guarda directo: saveState() leería el DOM del paciente eliminado
+            // y sobrescribiría los datos del nuevo paciente activo.
+            StorageRepository.saveAppState(this.appState);
             this.renderTabs();
             this.renderActivePatient();
         }

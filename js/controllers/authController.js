@@ -5,6 +5,7 @@
  */
 
 import { AuthService } from '../core/authService.js';
+import { PermisosService, ACCIONES } from '../core/permisosService.js';
 import { StorageRepository } from '../data/storageRepository.js';
 import { renderUserPillHtml, renderProfilesListHtml, renderPasswordPromptHtml } from '../ui/authView.js';
 
@@ -35,10 +36,14 @@ export class AuthController {
         // Formulario de Registro de Nuevo Doctor
         this.registerForm = document.getElementById('form-register-doctor');
         this.registerAlert = document.getElementById('auth-register-alert');
+        this.registerLead = document.getElementById('auth-register-lead');
+        this.btnSubmitDoctor = document.getElementById('btn-submit-new-doctor');
+        this.btnCancelEditDoctor = document.getElementById('btn-cancel-edit-doctor');
 
         this.usuarios = [];
         this.activeUser = null;
         this.pendingUser = null;
+        this.editingUserId = null; // null = alta de profesional; número = edición
         this.currentView = 'list'; // 'list', 'register', 'password'
     }
 
@@ -87,6 +92,10 @@ export class AuthController {
 
         if (this.tabRegisterBtn) {
             this.tabRegisterBtn.addEventListener('click', () => {
+                if (!PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR)) {
+                    alert(PermisosService.mensajeDenegado(this.activeUser));
+                    return;
+                }
                 this.showView('register');
             });
         }
@@ -94,6 +103,18 @@ export class AuthController {
         // Selección de tarjeta de perfil para cambiar de turno
         if (this.profilesGrid) {
             this.profilesGrid.addEventListener('click', (e) => {
+                const btnEdit = e.target.closest('.btn-edit-profile');
+                if (btnEdit) {
+                    this.handleEditProfile(parseInt(btnEdit.dataset.userId, 10));
+                    return;
+                }
+
+                const btnDelete = e.target.closest('.btn-delete-profile');
+                if (btnDelete) {
+                    this.handleDeleteProfile(parseInt(btnDelete.dataset.userId, 10));
+                    return;
+                }
+
                 const target = e.target.closest('.btn-select-profile') || e.target.closest('.profile-card');
                 if (!target) return;
 
@@ -108,8 +129,16 @@ export class AuthController {
         if (this.registerForm) {
             this.registerForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                this.handleRegisterDoctor();
+                if (this.editingUserId !== null) {
+                    this.handleUpdateDoctor();
+                } else {
+                    this.handleRegisterDoctor();
+                }
             });
+        }
+
+        if (this.btnCancelEditDoctor) {
+            this.btnCancelEditDoctor.addEventListener('click', () => this.showView('list'));
         }
 
         // Formulario y eventos de Contraseña
@@ -170,6 +199,10 @@ export class AuthController {
         if (this.tabProfilesBtn) this.tabProfilesBtn.classList.remove('active');
         if (this.tabRegisterBtn) this.tabRegisterBtn.classList.remove('active');
 
+        // Cualquier cambio de vista sale del modo edición (openEditForm lo vuelve a activar)
+        this.editingUserId = null;
+        this.updateRegisterFormMode(null);
+
         if (viewName === 'register') {
             if (this.registerSection) this.registerSection.style.display = 'block';
             if (this.tabRegisterBtn) this.tabRegisterBtn.classList.add('active');
@@ -190,7 +223,140 @@ export class AuthController {
     renderProfilesList() {
         if (!this.profilesGrid) return;
         this.usuarios = StorageRepository.loadUsuarios(AuthService.getUsuariosPredefinidos());
-        this.profilesGrid.innerHTML = renderProfilesListHtml(this.usuarios, this.activeUser ? this.activeUser.id : 1);
+        const puedeGestionar = PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR);
+        if (this.tabRegisterBtn) {
+            this.tabRegisterBtn.style.display = puedeGestionar ? '' : 'none';
+        }
+        this.profilesGrid.innerHTML = renderProfilesListHtml(this.usuarios, this.activeUser ? this.activeUser.id : 1, puedeGestionar);
+    }
+
+    // ------------------------------------------------------------------
+    // Cambios y Bajas del catálogo de Usuarios
+    // ------------------------------------------------------------------
+
+    /** Ajusta textos del formulario según alta o edición. */
+    updateRegisterFormMode(usuario) {
+        const editando = !!usuario;
+        if (this.registerLead) {
+            this.registerLead.innerText = editando
+                ? `Modifica los datos de ${usuario.nombre}. Deja la contraseña vacía para conservar la actual.`
+                : 'Ingresa los datos profesionales y credenciales para dar de alta un nuevo médico, especialista o enfermero/a en el sistema.';
+        }
+        if (this.btnSubmitDoctor) {
+            this.btnSubmitDoctor.innerHTML = editando ? '💾 Guardar Cambios' : '💾 Registrar e Iniciar Turno';
+        }
+        if (this.btnCancelEditDoctor) {
+            this.btnCancelEditDoctor.style.display = editando ? 'inline-flex' : 'none';
+        }
+        if (this.tabRegisterBtn) {
+            this.tabRegisterBtn.innerHTML = editando ? '✏️ Editar Profesional' : '➕ Registrar Nuevo Doctor/a';
+        }
+        const passInput = document.getElementById('reg-doc-password');
+        const confirmInput = document.getElementById('reg-doc-confirm-password');
+        [passInput, confirmInput].forEach(input => {
+            if (!input) return;
+            input.required = !editando;
+            input.placeholder = editando ? 'Vacío = conservar contraseña actual' : (input === passInput ? 'Mínimo 3 caracteres' : 'Repite la contraseña');
+        });
+        const rolSelect = document.getElementById('reg-doc-rol');
+        if (rolSelect) {
+            // Un profesional sin permiso de gestión no puede cambiarse el rol a sí mismo
+            rolSelect.disabled = editando && !PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR);
+        }
+    }
+
+    handleEditProfile(userId) {
+        const usuario = this.usuarios.find(u => u.id === userId);
+        if (!usuario) return;
+
+        const esPropio = this.activeUser && this.activeUser.id === userId;
+        if (!esPropio && !PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR)) {
+            alert(PermisosService.mensajeDenegado(this.activeUser));
+            return;
+        }
+
+        this.showView('register');
+        this.editingUserId = userId;
+        this.updateRegisterFormMode(usuario);
+
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+        setVal('reg-doc-nombre', usuario.nombre);
+        setVal('reg-doc-cedula', usuario.cedula);
+        setVal('reg-doc-rol', usuario.rol);
+        setVal('reg-doc-especialidad', usuario.especialidad);
+        setVal('reg-doc-turno', usuario.turno);
+        setVal('reg-doc-password', '');
+        setVal('reg-doc-confirm-password', '');
+    }
+
+    handleUpdateDoctor() {
+        const usuario = this.usuarios.find(u => u.id === this.editingUserId);
+        if (!usuario) return;
+
+        const formData = this.leerFormularioDoctor();
+        const validacion = AuthService.validarNuevoUsuario(formData, this.usuarios, {
+            excluirId: usuario.id,
+            passwordOpcional: true
+        });
+        if (!validacion.valido) {
+            this.showRegisterAlert(validacion.errores.join(' '));
+            return;
+        }
+
+        const actualizado = AuthService.actualizarUsuario(usuario, formData);
+        this.usuarios = this.usuarios.map(u => (u.id === actualizado.id ? actualizado : u));
+        StorageRepository.saveUsuarios(this.usuarios);
+
+        // Si se editó el perfil con turno activo, se refresca la sesión
+        if (this.activeUser && this.activeUser.id === actualizado.id) {
+            this.switchActiveUser(actualizado);
+        } else if (typeof this.onUserChanged === 'function') {
+            this.onUserChanged(this.activeUser);
+        }
+
+        this.showView('list');
+    }
+
+    handleDeleteProfile(userId) {
+        if (!PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR)) {
+            alert(PermisosService.mensajeDenegado(this.activeUser));
+            return;
+        }
+
+        const validacion = AuthService.validarBajaUsuario(userId, this.usuarios, this.activeUser ? this.activeUser.id : null);
+        if (!validacion.valido) {
+            alert(`⚠️ ${validacion.error}`);
+            return;
+        }
+
+        const usuario = this.usuarios.find(u => u.id === userId);
+        if (!confirm(`¿Dar de baja a ${usuario.nombre}? Ya no podrá iniciar turno en el sistema.`)) return;
+
+        this.usuarios = this.usuarios.filter(u => u.id !== userId);
+        StorageRepository.saveUsuarios(this.usuarios);
+        if (typeof this.onUserChanged === 'function') {
+            this.onUserChanged(this.activeUser);
+        }
+        this.renderProfilesList();
+    }
+
+    leerFormularioDoctor() {
+        const val = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        };
+        return {
+            nombre: val('reg-doc-nombre').trim(),
+            cedula: val('reg-doc-cedula').trim(),
+            rol: val('reg-doc-rol'),
+            especialidad: val('reg-doc-especialidad').trim(),
+            turno: val('reg-doc-turno') || 'Matutino',
+            password: val('reg-doc-password'),
+            confirmPassword: val('reg-doc-confirm-password')
+        };
     }
 
     handleSelectProfile(userId) {
@@ -238,6 +404,10 @@ export class AuthController {
     }
 
     handleRegisterDoctor() {
+        if (!PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR)) {
+            this.showRegisterAlert(PermisosService.mensajeDenegado(this.activeUser));
+            return;
+        }
         const nombreInput = document.getElementById('reg-doc-nombre');
         const cedulaInput = document.getElementById('reg-doc-cedula');
         const rolSelect = document.getElementById('reg-doc-rol');

@@ -26,9 +26,11 @@ export function renderUserPillHtml(user) {
 /**
  * Genera el listado de tarjetas de profesionales en el modal de autenticación.
  */
-export function renderProfilesListHtml(usuarios, activeUserId) {
+export function renderProfilesListHtml(usuarios, activeUserId, puedeGestionar = false) {
     return usuarios.map(u => {
         const isActive = u.id === activeUserId;
+        const puedeEditar = puedeGestionar || isActive;
+        const puedeEliminar = puedeGestionar && !isActive;
         const demoHint = u.password ? `<small class="auth-demo-hint">🔑 Contraseña: <strong>${u.password}</strong></small>` : '';
 
         return `
@@ -61,6 +63,16 @@ export function renderProfilesListHtml(usuarios, activeUserId) {
                 </div>
 
                 <div class="profile-card-footer">
+                    ${puedeEditar ? `
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-profile" data-user-id="${u.id}" title="Editar datos del profesional">
+                            ✏️ Editar
+                        </button>
+                    ` : ''}
+                    ${puedeEliminar ? `
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-profile" data-user-id="${u.id}" title="Dar de baja al profesional">
+                            🗑️
+                        </button>
+                    ` : ''}
                     <button type="button" class="btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'} btn-select-profile" data-user-id="${u.id}">
                         ${isActive ? '✓ Sesión Actual' : 'Ingresar Contraseña ➔'}
                     </button>

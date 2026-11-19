@@ -9,8 +9,9 @@ import { ESTADOS_INFO, ESTADOS_CITA, MEDICOS_DISPONIBLES, MOTIVOS_SUGERIDOS } fr
 /**
  * Genera el HTML de la tarjeta de una cita médica.
  */
-export function renderCitaCardHtml(cita) {
+export function renderCitaCardHtml(cita, permisos = { agendar: true, atender: true, cancelar: true }) {
     const estadoInfo = ESTADOS_INFO[cita.estado] || ESTADOS_INFO.PROGRAMADA;
+    const esActiva = cita.estado === ESTADOS_CITA.PROGRAMADA || cita.estado === ESTADOS_CITA.EN_CURSO;
 
     return `
         <div class="cita-card cita-status-${cita.estado.toLowerCase()}" data-cita-id="${cita.id}">
@@ -56,27 +57,35 @@ export function renderCitaCardHtml(cita) {
                         </button>
                     ` : ''}
                     
-                    ${cita.estado === ESTADOS_CITA.PROGRAMADA ? `
+                    ${permisos.agendar && esActiva ? `
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-cita-edit" data-cita-id="${cita.id}" title="Editar o reprogramar la cita">
+                            ✏️ Editar / Reprogramar
+                        </button>
+                    ` : ''}
+
+                    ${permisos.atender && cita.estado === ESTADOS_CITA.PROGRAMADA ? `
                         <button type="button" class="btn btn-sm btn-outline-warning btn-cita-change-state" data-cita-id="${cita.id}" data-new-state="${ESTADOS_CITA.EN_CURSO}">
                             🩺 Atender
                         </button>
                     ` : ''}
 
-                    ${cita.estado === ESTADOS_CITA.EN_CURSO ? `
+                    ${permisos.atender && cita.estado === ESTADOS_CITA.EN_CURSO ? `
                         <button type="button" class="btn btn-sm btn-outline-success btn-cita-change-state" data-cita-id="${cita.id}" data-new-state="${ESTADOS_CITA.COMPLETADA}">
                             ✅ Concluir
                         </button>
                     ` : ''}
 
-                    ${cita.estado !== ESTADOS_CITA.CANCELADA && cita.estado !== ESTADOS_CITA.COMPLETADA ? `
+                    ${permisos.cancelar && esActiva ? `
                         <button type="button" class="btn btn-sm btn-outline-danger btn-cita-change-state" data-cita-id="${cita.id}" data-new-state="${ESTADOS_CITA.CANCELADA}">
                             ❌ Cancelar
                         </button>
                     ` : ''}
 
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-cita-delete" data-cita-id="${cita.id}" title="Eliminar registro">
-                        🗑️
-                    </button>
+                    ${permisos.cancelar ? `
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-cita-delete" data-cita-id="${cita.id}" title="Eliminar registro">
+                            🗑️
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -86,11 +95,11 @@ export function renderCitaCardHtml(cita) {
 /**
  * Genera el HTML de la lista de citas.
  */
-export function renderCitasListHtml(citas) {
+export function renderCitasListHtml(citas, permisos) {
     if (!Array.isArray(citas) || citas.length === 0) {
         return renderEmptyCitasHtml();
     }
-    return citas.map(c => renderCitaCardHtml(c)).join('');
+    return citas.map(c => renderCitaCardHtml(c, permisos)).join('');
 }
 
 /**
@@ -125,11 +134,11 @@ export function populatePacientesSelect(selectEl, patients = []) {
 /**
  * Llena el selector de médicos.
  */
-export function populateMedicosSelect(selectEl) {
+export function populateMedicosSelect(selectEl, medicos = MEDICOS_DISPONIBLES) {
     if (!selectEl) return;
     selectEl.innerHTML = `
         <option value="">-- Seleccionar Profesional Responsable --</option>
-        ${MEDICOS_DISPONIBLES.map(m => `
+        ${medicos.map(m => `
             <option value="${m}">${m}</option>
         `).join('')}
     `;

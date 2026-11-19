@@ -6,6 +6,7 @@
 
 import { defaultMeds } from '../core/catalogoMedicamentos.js';
 import { AgendaService } from '../core/agendaService.js';
+import { PermisosService, ACCIONES } from '../core/permisosService.js';
 import { StorageRepository } from '../data/storageRepository.js';
 import {
     getActiveInfusions,
@@ -20,7 +21,9 @@ export class DashboardController {
      * @param {Function} options.onNewPatient - Callback al crear un nuevo paciente
      * @param {Function} options.onNavigateToCitas - Callback para navegar al módulo de citas
      */
-    constructor({ onSelectPatient, onNewPatient, onNavigateToCitas } = {}) {
+    constructor({ onSelectPatient, onNewPatient, onNavigateToCitas, onNavigateToHistorial } = {}) {
+        this.btnGoHistorial = document.getElementById('btn-dash-go-historial');
+        this.onNavigateToHistorial = onNavigateToHistorial;
         this.patientsGrid = document.getElementById('patients-grid');
         this.totalPatientsEl = document.getElementById('dash-total-patients');
         this.activeInfusionsEl = document.getElementById('dash-active-infusions');
@@ -66,6 +69,14 @@ export class DashboardController {
             this.btnGoCitas.addEventListener('click', () => {
                 if (typeof this.onNavigateToCitas === 'function') {
                     this.onNavigateToCitas();
+                }
+            });
+        }
+
+        if (this.btnGoHistorial) {
+            this.btnGoHistorial.addEventListener('click', () => {
+                if (typeof this.onNavigateToHistorial === 'function') {
+                    this.onNavigateToHistorial();
                 }
             });
         }
@@ -131,10 +142,17 @@ export class DashboardController {
             this.citasHoyEl.innerText = AgendaService.contarCitasHoy(citas);
         }
 
+        // Permisos por rol
+        const usuario = StorageRepository.getActiveUser();
+        const puedeCalculadora = PermisosService.puede(usuario, ACCIONES.CALCULADORA_USAR);
+        if (this.btnNewPatient) {
+            this.btnNewPatient.style.display = PermisosService.puede(usuario, ACCIONES.PACIENTE_ALTA) ? '' : 'none';
+        }
+
         // Actualizar botón de continuación
         if (this.btnContinue) {
             const activePat = patients.find(p => p.id === this.activePatientId) || patients[0];
-            if (activePat) {
+            if (activePat && puedeCalculadora) {
                 this.btnContinue.style.display = 'inline-flex';
                 this.btnContinue.innerHTML = `<span>➔</span> Continuar con <strong>${activePat.name}</strong>`;
             } else {

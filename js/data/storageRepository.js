@@ -93,7 +93,7 @@ export class StorageRepository {
                     id: 1,
                     pacienteId: 1,
                     pacienteNombre: 'Paciente 1',
-                    medicoResponsable: 'Dr. Alejandro Morales (Pediatra General)',
+                    medicoResponsable: 'Dr. Alejandro Morales — Terapia Intensiva Pediátrica (UCIP)',
                     fecha: hoy,
                     hora: '10:00',
                     motivo: 'Control y titulación de aminas vasoactivas',
@@ -104,7 +104,7 @@ export class StorageRepository {
                     id: 2,
                     pacienteId: 1,
                     pacienteNombre: 'Paciente 1',
-                    medicoResponsable: 'Dra. Sofía Herrera (Médico Intensivista UCIP)',
+                    medicoResponsable: 'Dra. Sofía Herrera — Urgencias Pediátricas y Choque',
                     fecha: hoy,
                     hora: '14:30',
                     motivo: 'Valoración hemodinámica y retiro de vía venosa central',
@@ -168,6 +168,36 @@ export class StorageRepository {
      */
     static setActiveUser(user) {
         localStorage.setItem(STORAGE_KEYS.AUTH_DATA, JSON.stringify(user));
+    }
+
+    /**
+     * Carga el historial de reportes de entrega de guardia guardados.
+     * @returns {Array} reportes
+     */
+    static loadHistorial() {
+        const saved = localStorage.getItem(STORAGE_KEYS.HISTORIAL_DATA);
+        if (!saved) return [];
+        try {
+            const parsed = JSON.parse(saved);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.error('[StorageRepository] Error al cargar historial de reportes:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Guarda el historial de reportes de entrega de guardia.
+     * @param {Array} reportes
+     */
+    static saveHistorial(reportes) {
+        try {
+            localStorage.setItem(STORAGE_KEYS.HISTORIAL_DATA, JSON.stringify(reportes));
+            return true;
+        } catch (e) {
+            console.error('[StorageRepository] Error al guardar historial de reportes:', e);
+            return false;
+        }
     }
 
     /**

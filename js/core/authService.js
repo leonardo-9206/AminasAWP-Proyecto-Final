@@ -1,19 +1,29 @@
 // js/core/authService.js
 /**
  * Servicio de Lógica de Negocio de Autenticación y Perfiles de Usuario (Capa de Dominio).
- * Modela los roles hospitalarios (`MEDICO_PEDIATRA`, `ENFERMERO_A`, `RESIDENTE`), contraseñas y firma digital.
+ * Modela los roles hospitalarios (`MEDICO_PEDIATRA`, `ENFERMERO_A`, `RESIDENTE`, `RECEPCION`), contraseñas y firma digital.
  */
 
 export const ROLES_HOSPITALARIOS = {
     MEDICO_PEDIATRA: 'MEDICO_PEDIATRA',
     ENFERMERO_A: 'ENFERMERO_A',
-    RESIDENTE: 'RESIDENTE'
+    RESIDENTE: 'RESIDENTE',
+    RECEPCION: 'RECEPCION'
 };
 
 export const ROLES_LABELS = {
     MEDICO_PEDIATRA: 'Médico Pediatra Especialista',
     ENFERMERO_A: 'Enfermero/a Especialista',
-    RESIDENTE: 'Médico Residente de Pediatría'
+    RESIDENTE: 'Médico Residente de Pediatría',
+    RECEPCION: 'Administrador / Recepción'
+};
+
+/** Avatar por defecto según el rol. */
+export const ROLES_AVATAR = {
+    MEDICO_PEDIATRA: '👨‍⚕️',
+    ENFERMERO_A: '👩‍⚕️',
+    RESIDENTE: '🩺',
+    RECEPCION: '📋'
 };
 
 export const USUARIOS_PREDEFINIDOS = [
@@ -60,6 +70,17 @@ export const USUARIOS_PREDEFINIDOS = [
         avatar: '🩺',
         turno: 'Jornada Acumulada',
         password: '1234'
+    },
+    {
+        id: 5,
+        nombre: 'Lic. Mariana Torres',
+        cedula: '5521874',
+        rol: ROLES_HOSPITALARIOS.RECEPCION,
+        rolLabel: 'Administrador / Recepción',
+        especialidad: 'Control de Agenda y Admisión Pediátrica',
+        avatar: '📋',
+        turno: 'Matutino',
+        password: '1234'
     }
 ];
 
@@ -81,9 +102,14 @@ export class AuthService {
     }
 
     /**
-     * Valida los datos para dar de alta un nuevo doctor o profesional de la salud.
+     * Valida los datos para dar de alta (o modificar) un profesional de la salud.
+     * @param {Object} data - Datos capturados en el formulario
+     * @param {Array} usuariosExistentes - Catálogo actual de usuarios
+     * @param {Object} opciones
+     * @param {number|null} opciones.excluirId - ID del usuario que se está editando (no cuenta como duplicado)
+     * @param {boolean} opciones.passwordOpcional - En edición, la contraseña vacía significa "conservar la actual"
      */
-    static validarNuevoUsuario(data, usuariosExistentes = []) {
+    static validarNuevoUsuario(data, usuariosExistentes = [], { excluirId = null, passwordOpcional = false } = {}) {
         const errores = [];
 
         if (!data.nombre || data.nombre.trim().length < 3) {
@@ -94,7 +120,9 @@ export class AuthService {
             errores.push('La cédula profesional es obligatoria (mínimo 4 dígitos).');
         } else {
             const cleanCedula = data.cedula.trim();
-            const cedulaDuplicada = usuariosExistentes.some(u => String(u.cedula).trim() === cleanCedula);
+            const cedulaDuplicada = usuariosExistentes.some(u =>
+                u.id !== excluirId && String(u.cedula).trim() === cleanCedula
+            );
             if (cedulaDuplicada) {
                 errores.push(`Ya existe un profesional registrado con la cédula ${cleanCedula}.`);
             }
@@ -108,11 +136,13 @@ export class AuthService {
             errores.push('La especialidad o área de servicio es obligatoria.');
         }
 
-        if (!data.password || data.password.trim().length < 3) {
+        const cambiaPassword = !passwordOpcional || (data.password && data.password.length > 0);
+
+        if (cambiaPassword && (!data.password || data.password.trim().length < 3)) {
             errores.push('La contraseña debe tener al menos 3 caracteres.');
         }
 
-        if (data.password !== data.confirmPassword) {
+        if (cambiaPassword && data.password !== data.confirmPassword) {
             errores.push('Las contraseñas ingresadas no coinciden.');
         }
 
@@ -129,13 +159,7 @@ export class AuthService {
         const ids = usuariosExistentes.map(u => parseInt(u.id, 10)).filter(id => !isNaN(id));
         const nuevoId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
 
-        let avatar = '👨‍⚕️';
-        if (data.rol === ROLES_HOSPITALARIOS.ENFERMERO_A) {
-            avatar = '👩‍⚕️';
-        } else if (data.rol === ROLES_HOSPITALARIOS.RESIDENTE) {
-            avatar = '🩺';
-        }
-
+        const avatar = ROLES_AVATAR[data.rol] || '👨‍⚕️';
         const rolLabel = ROLES_LABELS[data.rol] || 'Personal de Salud';
 
         return {
@@ -150,6 +174,47 @@ export class AuthService {
             password: data.password.trim(),
             fechaRegistro: new Date().toISOString()
         };
+    }
+
+    /**
+     * Aplica los cambios capturados a un usuario existente (operación de "Cambio" del catálogo).
+     * Si la contraseña viene vacía se conserva la anterior.
+     */
+    static actualizarUsuario(usuario, data) {
+        const rolCambio = usuario.rol !== data.rol;
+        return {
+            ...usuario,
+            nombre: data.nombre.trim(),
+            cedula: data.cedula.trim(),
+            rol: data.rol,
+            rolLabel: rolCambio ? (ROLES_LABELS[data.rol] || usuario.rolLabel) : usuario.rolLabel,
+            avatar: rolCambio ? (ROLES_AVATAR[data.rol] || usuario.avatar) : usuario.avatar,
+            especialidad: data.especialidad.trim(),
+            turno: data.turno ? data.turno.trim() : usuario.turno,
+            password: data.password && data.password.length > 0 ? data.password.trim() : usuario.password,
+            fechaModificacion: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Valida si un usuario puede darse de baja (operación de "Baja" del catálogo).
+     * Reglas: no se puede eliminar el usuario con sesión activa ni dejar el sistema sin un Médico Pediatra.
+     */
+    static validarBajaUsuario(usuarioId, usuarios = [], activeUserId = null) {
+        const usuario = usuarios.find(u => u.id === usuarioId);
+        if (!usuario) {
+            return { valido: false, error: 'El profesional no existe.' };
+        }
+        if (usuarioId === activeUserId) {
+            return { valido: false, error: 'No puedes eliminar el perfil con el turno activo. Cambia de perfil primero.' };
+        }
+        if (usuario.rol === ROLES_HOSPITALARIOS.MEDICO_PEDIATRA) {
+            const medicosRestantes = usuarios.filter(u => u.rol === ROLES_HOSPITALARIOS.MEDICO_PEDIATRA && u.id !== usuarioId);
+            if (medicosRestantes.length === 0) {
+                return { valido: false, error: 'Debe existir al menos un Médico Pediatra registrado en el sistema.' };
+            }
+        }
+        return { valido: true, error: null };
     }
 
     /**

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aminas-pwa-v14';
+const CACHE_NAME = 'aminas-pwa-v15';
 const urlsToCache = [
   './',
   './index.html',
@@ -10,15 +10,19 @@ const urlsToCache = [
   './js/core/calculoFisiologico.js',
   './js/core/agendaService.js',
   './js/core/authService.js',
+  './js/core/permisosService.js',
+  './js/core/historialService.js',
   './js/data/storageRepository.js',
   './js/ui/dashboardView.js',
   './js/ui/modalReporteView.js',
   './js/ui/citasView.js',
   './js/ui/authView.js',
+  './js/ui/historialView.js',
   './js/controllers/dashboardController.js',
   './js/controllers/calculadoraController.js',
   './js/controllers/reporteController.js',
   './js/controllers/citasController.js',
+  './js/controllers/historialController.js',
   './js/controllers/authController.js'
 ];
 

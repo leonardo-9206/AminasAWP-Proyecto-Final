@@ -22,7 +22,11 @@ export function getActiveInfusionsForReport(patient) {
 /**
  * Genera el HTML de la Ficha Médica / Ticket de entrega de turno.
  */
-export function renderReportCardHtml(patient, activeMeds, emissionDate = new Date(), activeUser = null) {
+export function renderReportCardHtml(patient, activeMeds, emissionDate = new Date(), activeUser = null, notas = '', folio = null) {
+    const notasEscapadas = String(notas || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     const fecha = emissionDate.toLocaleDateString('es-MX', {
         year: 'numeric',
         month: 'long',
@@ -101,6 +105,7 @@ export function renderReportCardHtml(patient, activeMeds, emissionDate = new Dat
                 <div class="report-meta">
                     <div><strong>Fecha:</strong> ${fecha}</div>
                     <div><strong>Hora:</strong> ${hora}</div>
+                    ${folio ? `<div><strong>Folio:</strong> #${folio}</div>` : ''}
                 </div>
             </header>
 
@@ -140,7 +145,7 @@ export function renderReportCardHtml(patient, activeMeds, emissionDate = new Dat
                 <label for="report-custom-notes" class="report-notes-label">
                     📝 Observaciones Clínicas / Pendientes de Turno:
                 </label>
-                <textarea id="report-custom-notes" class="report-notes-input" rows="2" placeholder="Ej: Vía central permeable en subclavia derecha. Paciente hemodinámicamente estable, balance horario sin eventualidades..."></textarea>
+                <textarea id="report-custom-notes" class="report-notes-input" rows="2" placeholder="Ej: Vía central permeable en subclavia derecha. Paciente hemodinámicamente estable, balance horario sin eventualidades...">${notasEscapadas}</textarea>
             </section>
 
             <footer class="report-ticket-footer">
@@ -162,8 +167,8 @@ export function renderReportCardHtml(patient, activeMeds, emissionDate = new Dat
 /**
  * Genera el texto estructurado con formato enriquecido para WhatsApp.
  */
-export function generateWhatsAppReportText(patient, activeMeds, customNotes = '', activeUser = null) {
-    const now = new Date();
+export function generateWhatsAppReportText(patient, activeMeds, customNotes = '', activeUser = null, emissionDate = new Date()) {
+    const now = emissionDate;
     const fecha = now.toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
     const hora = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 

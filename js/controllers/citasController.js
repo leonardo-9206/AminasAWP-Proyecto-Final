@@ -1,11 +1,15 @@
 // js/controllers/citasController.js
 /**
  * Controlador del Módulo de Citas y Agenda (Capa de Aplicación).
- * Gestiona el agendamiento, transiciones de estado, filtros y persistencia en LocalStorage.
+ * Gestiona el ABCC de citas: agendamiento (Alta), eliminación (Baja),
+ * edición / reprogramación y transiciones de estado (Cambios), filtros (Consultas)
+ * y persistencia en LocalStorage.
  */
 
 import { defaultMeds } from '../core/catalogoMedicamentos.js';
 import { AgendaService, ESTADOS_CITA } from '../core/agendaService.js';
+import { AuthService } from '../core/authService.js';
+import { PermisosService, ACCIONES } from '../core/permisosService.js';
 import { StorageRepository } from '../data/storageRepository.js';
 import {
     renderCitasListHtml,
@@ -13,6 +17,9 @@ import {
     populateMedicosSelect,
     populateMotivosDatalist
 } from '../ui/citasView.js';
+
+const TEXTO_BTN_NUEVA = '<span>➕</span> Nueva Cita Pediátrica';
+const TEXTO_BTN_OCULTAR = '<span>▲</span> Ocultar Formulario';
 
 export class CitasController {
     /**
@@ -31,7 +38,10 @@ export class CitasController {
         // Formulario
         this.form = document.getElementById('form-nueva-cita');
         this.formWrapper = document.getElementById('form-cita-wrapper');
+        this.formTitle = document.getElementById('cita-form-title');
         this.btnToggleForm = document.getElementById('btn-toggle-form-cita');
+        this.btnGuardar = document.getElementById('btn-guardar-cita');
+        this.btnCancelarEdicion = document.getElementById('btn-cancelar-edicion-cita');
         this.pacienteSelect = document.getElementById('cita-paciente-select');
         this.customNombreGroup = document.getElementById('cita-custom-nombre-group');
         this.customNombreInput = document.getElementById('cita-custom-nombre');
@@ -59,12 +69,22 @@ export class CitasController {
         this.citas = [];
         this.filtroEstadoActual = 'TODOS';
         this.busquedaActual = '';
+        this.editingCitaId = null; // null = modo alta; número = modo edición
     }
 
     init() {
         this.setupEventListeners();
         this.setDefaultDateTime();
         this.render();
+    }
+
+    /** Usuario con turno activo (para aplicar permisos). */
+    getActiveUser() {
+        return StorageRepository.getActiveUser();
+    }
+
+    puede(accion) {
+        return PermisosService.puede(this.getActiveUser(), accion);
     }
 
     setDefaultDateTime() {
@@ -85,30 +105,30 @@ export class CitasController {
         if (this.btnToggleForm && this.formWrapper) {
             this.btnToggleForm.addEventListener('click', () => {
                 const isHidden = this.formWrapper.style.display === 'none';
-                this.formWrapper.style.display = isHidden ? 'block' : 'none';
-                this.btnToggleForm.innerHTML = isHidden
-                    ? '<span>▲</span> Ocultar Formulario'
-                    : '<span>➕</span> Nueva Cita Pediátrica';
+                if (isHidden) {
+                    this.openForm();
+                } else {
+                    this.closeForm();
+                }
             });
+        }
+
+        if (this.btnCancelarEdicion) {
+            this.btnCancelarEdicion.addEventListener('click', () => this.closeForm());
         }
 
         // Cambio en selector de paciente (si selecciona OTRO, muestra input de texto libre)
         if (this.pacienteSelect) {
             this.pacienteSelect.addEventListener('change', () => {
-                if (this.pacienteSelect.value === 'OTRO') {
-                    if (this.customNombreGroup) this.customNombreGroup.style.display = 'block';
-                    if (this.customNombreInput) this.customNombreInput.focus();
-                } else {
-                    if (this.customNombreGroup) this.customNombreGroup.style.display = 'none';
-                }
+                this.toggleCustomNombre(this.pacienteSelect.value === 'OTRO', true);
             });
         }
 
-        // Envío del formulario
+        // Envío del formulario (alta o cambio según el modo)
         if (this.form) {
             this.form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                this.handleCreateCita();
+                this.handleSaveCita();
             });
         }
 
@@ -137,6 +157,16 @@ export class CitasController {
                     const pacienteId = parseInt(btnCalc.dataset.pacienteId, 10);
                     if (!isNaN(pacienteId) && typeof this.onNavigateToCalculadora === 'function') {
                         this.onNavigateToCalculadora(pacienteId);
+                    }
+                    return;
+                }
+
+                // Editar / reprogramar cita
+                const btnEdit = e.target.closest('.btn-cita-edit');
+                if (btnEdit) {
+                    const citaId = parseInt(btnEdit.dataset.citaId, 10);
+                    if (!isNaN(citaId)) {
+                        this.handleEditCita(citaId);
                     }
                     return;
                 }
@@ -181,7 +211,52 @@ export class CitasController {
         }
     }
 
-    handleCreateCita() {
+    // ------------------------------------------------------------------
+    // Manejo del formulario (modo alta / modo edición)
+    // ------------------------------------------------------------------
+
+    toggleCustomNombre(visible, focus = false) {
+        if (this.customNombreGroup) this.customNombreGroup.style.display = visible ? 'block' : 'none';
+        if (visible && focus && this.customNombreInput) this.customNombreInput.focus();
+    }
+
+    openForm() {
+        if (!this.formWrapper) return;
+        this.formWrapper.style.display = 'block';
+        if (this.btnToggleForm) this.btnToggleForm.innerHTML = TEXTO_BTN_OCULTAR;
+    }
+
+    /** Cierra el formulario y lo regresa al modo "Alta". */
+    closeForm() {
+        this.editingCitaId = null;
+        if (this.form) this.form.reset();
+        this.toggleCustomNombre(false);
+        this.hideFormAlert();
+        this.setDefaultDateTime();
+        this.updateFormMode();
+
+        if (this.formWrapper) this.formWrapper.style.display = 'none';
+        if (this.btnToggleForm) this.btnToggleForm.innerHTML = TEXTO_BTN_NUEVA;
+    }
+
+    /** Ajusta títulos y botones según si se está agendando o editando. */
+    updateFormMode() {
+        const editando = this.editingCitaId !== null;
+        if (this.formTitle) {
+            this.formTitle.innerText = editando
+                ? `✏️ Editar / Reprogramar Cita #${this.editingCitaId}`
+                : 'Programar Nueva Cita o Control Clínico';
+        }
+        if (this.btnGuardar) {
+            this.btnGuardar.innerHTML = editando ? '💾 Guardar Cambios' : '💾 Agendar Cita';
+        }
+        if (this.btnCancelarEdicion) {
+            this.btnCancelarEdicion.style.display = editando ? 'inline-flex' : 'none';
+        }
+    }
+
+    /** Lee los datos capturados en el formulario. */
+    leerFormulario() {
         let pacienteId = null;
         let pacienteNombre = '';
 
@@ -193,16 +268,29 @@ export class CitasController {
             pacienteNombre = selectedOpt ? selectedOpt.dataset.name : `Paciente ${pacienteId}`;
         }
 
-        const citaData = {
+        return {
             pacienteId,
             pacienteNombre,
             medicoResponsable: this.medicoSelect.value.trim(),
             fecha: this.fechaInput.value.trim(),
             hora: this.horaInput.value.trim(),
             motivo: this.motivoInput.value.trim(),
-            notas: this.notasInput ? this.notasInput.value.trim() : '',
-            estado: ESTADOS_CITA.PROGRAMADA
+            notas: this.notasInput ? this.notasInput.value.trim() : ''
         };
+    }
+
+    // ------------------------------------------------------------------
+    // Operaciones del catálogo de Citas (ABCC)
+    // ------------------------------------------------------------------
+
+    /** Alta o Cambio de cita según el modo del formulario. */
+    handleSaveCita() {
+        if (!this.puede(ACCIONES.CITA_AGENDAR)) {
+            this.showFormAlert(PermisosService.mensajeDenegado(this.getActiveUser()));
+            return;
+        }
+
+        const citaData = this.leerFormulario();
 
         const validacion = AgendaService.validarCita(citaData);
         if (!validacion.valido) {
@@ -210,46 +298,128 @@ export class CitasController {
             return;
         }
 
-        this.hideFormAlert();
-
-        const nuevoId = AgendaService.generarSiguienteId(this.citas);
-        const nuevaCita = { id: nuevoId, ...citaData };
-
-        this.citas.unshift(nuevaCita);
-        StorageRepository.saveCitas(this.citas);
-
-        // Resetear formulario
-        this.form.reset();
-        if (this.customNombreGroup) this.customNombreGroup.style.display = 'none';
-        this.setDefaultDateTime();
-
-        // Ocultar formulario para ver la lista de inmediato
-        if (this.formWrapper) {
-            this.formWrapper.style.display = 'none';
-            if (this.btnToggleForm) {
-                this.btnToggleForm.innerHTML = '<span>➕</span> Nueva Cita Pediátrica';
-            }
+        const empalme = AgendaService.buscarEmpalme(this.citas, citaData, this.editingCitaId);
+        if (empalme) {
+            this.showFormAlert(
+                `El horario ${citaData.fecha} a las ${citaData.hora} hrs ya está ocupado para ${citaData.medicoResponsable} ` +
+                `(cita de ${empalme.pacienteNombre}). Elige otra hora o profesional.`
+            );
+            return;
         }
 
+        this.hideFormAlert();
+
+        if (this.editingCitaId !== null) {
+            // CAMBIO: editar / reprogramar
+            const index = this.citas.findIndex(c => c.id === this.editingCitaId);
+            if (index === -1) {
+                this.showFormAlert('La cita que intentas editar ya no existe.');
+                return;
+            }
+            const anterior = this.citas[index];
+            const reprogramada = anterior.fecha !== citaData.fecha || anterior.hora !== citaData.hora;
+            this.citas[index] = {
+                ...anterior,
+                ...citaData,
+                reprogramaciones: (anterior.reprogramaciones || 0) + (reprogramada ? 1 : 0),
+                fechaModificacion: new Date().toISOString()
+            };
+        } else {
+            // ALTA: nueva cita
+            const nuevoId = AgendaService.generarSiguienteId(this.citas);
+            this.citas.unshift({
+                id: nuevoId,
+                ...citaData,
+                estado: ESTADOS_CITA.PROGRAMADA,
+                fechaRegistro: new Date().toISOString()
+            });
+        }
+
+        StorageRepository.saveCitas(this.citas);
+        this.closeForm();
         this.render();
     }
 
-    handleChangeState(citaId, newState) {
+    /** Carga una cita en el formulario para editarla / reprogramarla. */
+    handleEditCita(citaId) {
+        if (!this.puede(ACCIONES.CITA_AGENDAR)) {
+            alert(PermisosService.mensajeDenegado(this.getActiveUser()));
+            return;
+        }
+
         const cita = this.citas.find(c => c.id === citaId);
         if (!cita) return;
 
+        this.editingCitaId = citaId;
+        this.hideFormAlert();
+
+        // Paciente: registrado o externo
+        const optionPaciente = cita.pacienteId !== null && cita.pacienteId !== undefined
+            ? this.pacienteSelect.querySelector(`option[value="${cita.pacienteId}"]`)
+            : null;
+        if (optionPaciente) {
+            this.pacienteSelect.value = String(cita.pacienteId);
+            this.toggleCustomNombre(false);
+        } else {
+            this.pacienteSelect.value = 'OTRO';
+            if (this.customNombreInput) this.customNombreInput.value = cita.pacienteNombre || '';
+            this.toggleCustomNombre(true);
+        }
+
+        // Profesional: si ya no está en el catálogo, se agrega temporalmente para no perder el dato
+        if (!Array.from(this.medicoSelect.options).some(o => o.value === cita.medicoResponsable)) {
+            const opt = document.createElement('option');
+            opt.value = cita.medicoResponsable;
+            opt.textContent = cita.medicoResponsable;
+            this.medicoSelect.appendChild(opt);
+        }
+        this.medicoSelect.value = cita.medicoResponsable;
+
+        this.fechaInput.value = cita.fecha;
+        this.horaInput.value = cita.hora;
+        this.motivoInput.value = cita.motivo;
+        if (this.notasInput) this.notasInput.value = cita.notas || '';
+
+        this.updateFormMode();
+        this.openForm();
+        this.formWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    handleChangeState(citaId, newState) {
+        const accion = newState === ESTADOS_CITA.CANCELADA ? ACCIONES.CITA_CANCELAR : ACCIONES.CITA_ATENDER;
+        if (!this.puede(accion)) {
+            alert(PermisosService.mensajeDenegado(this.getActiveUser()));
+            return;
+        }
+
+        const cita = this.citas.find(c => c.id === citaId);
+        if (!cita) return;
+
+        if (newState === ESTADOS_CITA.CANCELADA && !confirm(`¿Cancelar la cita de ${cita.pacienteNombre}?`)) {
+            return;
+        }
+
         cita.estado = newState;
+        cita.fechaModificacion = new Date().toISOString();
         StorageRepository.saveCitas(this.citas);
+
+        if (this.editingCitaId === citaId) this.closeForm();
         this.render();
     }
 
     handleDeleteCita(citaId) {
+        if (!this.puede(ACCIONES.CITA_CANCELAR)) {
+            alert(PermisosService.mensajeDenegado(this.getActiveUser()));
+            return;
+        }
+
         const cita = this.citas.find(c => c.id === citaId);
         const nombre = cita ? cita.pacienteNombre : 'esta cita';
 
         if (confirm(`¿Estás seguro de eliminar el registro de cita para ${nombre}?`)) {
             this.citas = this.citas.filter(c => c.id !== citaId);
             StorageRepository.saveCitas(this.citas);
+            if (this.editingCitaId === citaId) this.closeForm();
             this.render();
         }
     }
@@ -270,13 +440,25 @@ export class CitasController {
         // Cargar citas persistidas
         this.citas = StorageRepository.loadCitas();
 
-        // Cargar pacientes activos para llenar selectores
-        const appState = StorageRepository.loadAppState(defaultMeds);
-        const patients = appState.patients || [];
+        // Si se está editando, no se reconstruye el formulario para no perder lo capturado
+        if (this.editingCitaId === null) {
+            const appState = StorageRepository.loadAppState(defaultMeds);
+            const patients = appState.patients || [];
+            const usuarios = StorageRepository.loadUsuarios(AuthService.getUsuariosPredefinidos());
 
-        populatePacientesSelect(this.pacienteSelect, patients);
-        populateMedicosSelect(this.medicoSelect);
-        populateMotivosDatalist(this.motivosDatalist);
+            populatePacientesSelect(this.pacienteSelect, patients);
+            populateMedicosSelect(this.medicoSelect, AgendaService.obtenerMedicosDisponibles(usuarios));
+            populateMotivosDatalist(this.motivosDatalist);
+        }
+
+        // Permisos: ocultar el botón de alta si el rol no puede agendar
+        const puedeAgendar = this.puede(ACCIONES.CITA_AGENDAR);
+        if (this.btnToggleForm) {
+            this.btnToggleForm.style.display = puedeAgendar ? '' : 'none';
+        }
+        if (!puedeAgendar && this.formWrapper && this.formWrapper.style.display !== 'none') {
+            this.closeForm();
+        }
 
         // Actualizar contadores
         if (this.countTotalEl) {
@@ -298,8 +480,14 @@ export class CitasController {
             busqueda: this.busquedaActual
         });
 
+        const permisos = {
+            agendar: this.puede(ACCIONES.CITA_AGENDAR),
+            atender: this.puede(ACCIONES.CITA_ATENDER),
+            cancelar: this.puede(ACCIONES.CITA_CANCELAR)
+        };
+
         if (this.citasListContainer) {
-            this.citasListContainer.innerHTML = renderCitasListHtml(citasFiltradas);
+            this.citasListContainer.innerHTML = renderCitasListHtml(citasFiltradas, permisos);
         }
     }
 }

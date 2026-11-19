@@ -59,6 +59,9 @@
                     <button id="btn-dash-go-citas" class="btn btn-outline-primary">
                         <span>📅</span> Agenda de Citas
                     </button>
+                    <button id="btn-dash-go-historial" class="btn btn-outline-primary">
+                        <span>🗂️</span> Historial de Reportes
+                    </button>
                 </div>
             </div>
 
@@ -178,7 +181,7 @@
 
             <!-- Formulario Colapsable de Nueva Cita -->
             <div id="form-cita-wrapper" class="citas-form-card" style="display: none;">
-                <h3 class="citas-form-title">Programar Nueva Cita o Control Clínico</h3>
+                <h3 class="citas-form-title" id="cita-form-title">Programar Nueva Cita o Control Clínico</h3>
                 <div id="cita-form-alert" class="alert-box alert-warning" style="display: none;"></div>
 
                 <form id="form-nueva-cita" class="citas-form-grid">
@@ -225,6 +228,9 @@
                     </div>
 
                     <div class="form-group-actions">
+                        <button type="button" class="btn btn-secondary" id="btn-cancelar-edicion-cita" style="display: none;">
+                            ✕ Cancelar Edición
+                        </button>
                         <button type="submit" class="btn btn-primary" id="btn-guardar-cita">
                             💾 Agendar Cita
                         </button>
@@ -254,6 +260,42 @@
                 <!-- Se inyectan dinámicamente las citas -->
             </div>
         </section>
+
+        <!-- VISTA 4: HISTORIAL DE REPORTES DE ENTREGA DE GUARDIA -->
+        <section id="view-historial" class="app-view" style="display: none;">
+            <div class="calc-nav-bar">
+                <div class="calc-nav-actions">
+                    <button id="btn-historial-back-dashboard" class="btn btn-back">
+                        ← Volver al Inicio
+                    </button>
+                </div>
+                <div class="calc-nav-info">
+                    <span class="calc-nav-title">Historial de Entregas de Guardia</span>
+                    <span class="offline-badge">🟢 Modo Offline Listo</span>
+                </div>
+            </div>
+
+            <div class="citas-summary-bar">
+                <div class="summary-metric">
+                    <span class="metric-label">Reportes Guardados</span>
+                    <span class="metric-value" id="historial-count-total">0</span>
+                </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Emitidos Hoy</span>
+                    <span class="metric-value text-primary" id="historial-count-hoy">0</span>
+                </div>
+            </div>
+
+            <div class="citas-filter-bar">
+                <div class="search-group">
+                    <input type="text" id="historial-search-input" class="form-control" placeholder="🔍 Buscar por paciente, profesional u observaciones...">
+                </div>
+            </div>
+
+            <div class="citas-grid" id="historial-container">
+                <!-- Se inyectan dinámicamente los reportes -->
+            </div>
+        </section>
     </div>
 
     <!-- MODAL: REPORTE Y ENTREGA DE GUARDIA -->
@@ -272,6 +314,9 @@
             </div>
 
             <div class="modal-footer">
+                <button id="btn-modal-save-historial" class="btn btn-outline-primary" title="Guardar este reporte en el historial de entregas de guardia">
+                    <span class="btn-icon">💾</span> Guardar en Historial
+                </button>
                 <button id="btn-modal-copy-whatsapp" class="btn btn-whatsapp" title="Copiar resumen en formato listo para WhatsApp">
                     <span class="btn-icon">📋</span> Copiar para WhatsApp
                 </button>
@@ -321,7 +366,7 @@
 
                 <!-- SECCIÓN 2: FORMULARIO DE REGISTRO DE NUEVO PROFESIONAL -->
                 <div id="auth-register-section" style="display: none;">
-                    <p class="modal-lead-text">
+                    <p class="modal-lead-text" id="auth-register-lead">
                         Ingresa los datos profesionales y credenciales para dar de alta un nuevo médico, especialista o enfermero/a en el sistema.
                     </p>
 
@@ -344,6 +389,7 @@
                                 <option value="MEDICO_PEDIATRA">Médico Pediatra Especialista</option>
                                 <option value="ENFERMERO_A">Enfermero/a Especialista UCIP</option>
                                 <option value="RESIDENTE">Médico Residente de Pediatría</option>
+                                <option value="RECEPCION">Administrador / Recepción</option>
                             </select>
                         </div>
 
@@ -374,6 +420,9 @@
                         </div>
 
                         <div class="form-group-actions">
+                            <button type="button" class="btn btn-secondary" id="btn-cancel-edit-doctor" style="display: none;">
+                                ✕ Cancelar Edición
+                            </button>
                             <button type="submit" class="btn btn-primary" id="btn-submit-new-doctor">
                                 💾 Registrar e Iniciar Turno
                             </button>
