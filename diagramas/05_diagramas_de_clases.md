@@ -26,7 +26,7 @@
 
 ## 1. Clases de entidad (modelo de dominio)
 
-Son los objetos que el sistema guarda. En JavaScript se representan como objetos JSON; sus reglas de negocio viven en las clases de servicio (sección 2).
+Son los objetos que el sistema guarda. En JavaScript se representan como objetos JSON; sus reglas de negocio viven en las clases de servicio (siguiente apartado).
 
 ```mermaid
 classDiagram

@@ -152,7 +152,7 @@ flowchart TB
 
 > **Balanceo con el diagrama de contexto:** todos los flujos que entran y salen de `0` aparecen aquí como entradas y salidas de los procesos 2 a 7. Las flechas `<-->` indican lectura y escritura del mismo almacén.
 >
-> **Control de acceso:** los procesos 2, 5, 6 y 7 leen el `rol` de **D6 Sesión_activa** para validar permisos; el acceso al proceso 3 se valida al entrar a la calculadora. Para que el diagrama sea legible, esos flujos `rol` no se dibujan en el Diagrama 0; sí aparecen en los DFD de la sección 3. Las reglas vienen de la matriz de permisos (matriz RBAC de `js/core/permisosService.js`). Si el rol no tiene permiso, el proceso responde con `mensaje_error` y no modifica el almacén.
+> **Control de acceso:** los procesos 2, 5, 6 y 7 leen el `rol` de **D6 Sesión_activa** para validar permisos; el acceso al proceso 3 se valida al entrar a la calculadora. Para que el diagrama sea legible, esos flujos `rol` no se dibujan en el Diagrama 0; sí aparecen en los DFD de cada proceso. Las reglas vienen de la matriz de permisos (matriz RBAC de `js/core/permisosService.js`). Si el rol no tiene permiso, el proceso responde con `mensaje_error` y no modifica el almacén.
 
 ---
 
