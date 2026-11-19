@@ -31,12 +31,19 @@
                     <span class="metric-label">Infusiones Activas</span>
                     <span class="metric-value" id="dash-active-infusions">0</span>
                 </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Citas Médicas Hoy</span>
+                    <span class="metric-value" id="dash-citas-hoy">0</span>
+                </div>
                 <div class="dashboard-quick-actions">
                     <button id="btn-dash-new-patient" class="btn btn-primary">
                         <span>➕</span> Nuevo Paciente
                     </button>
                     <button id="btn-dash-continue" class="btn btn-secondary">
                         <span>➔</span> Continuar Consulta
+                    </button>
+                    <button id="btn-dash-go-citas" class="btn btn-outline-primary">
+                        <span>📅</span> Agenda de Citas
                     </button>
                 </div>
             </div>
@@ -56,9 +63,14 @@
         <!-- VISTA 2: CALCULADORA MULTI-PACIENTE -->
         <section id="view-calculadora" class="app-view" style="display: none;">
             <div class="calc-nav-bar">
-                <button id="btn-back-to-dashboard" class="btn btn-back">
-                    ← Volver al Inicio
-                </button>
+                <div class="calc-nav-actions">
+                    <button id="btn-back-to-dashboard" class="btn btn-back">
+                        ← Volver al Inicio
+                    </button>
+                    <button id="btn-calc-go-citas" class="btn btn-back">
+                        📅 Agenda de Citas
+                    </button>
+                </div>
                 <div class="calc-nav-info">
                     <span class="calc-nav-title">Calculadora de Infusiones</span>
                     <span class="offline-badge" id="calc-offline-badge">🟢 Modo Offline Listo</span>
@@ -110,6 +122,123 @@
                     <button id="btn-generar-reporte" class="btn btn-report">📄 Generar Reporte / Entrega de Guardia</button>
                 </div>
             </section>
+        </section>
+
+        <!-- VISTA 3: MÓDULO DE CITAS Y AGENDA PEDIÁTRICA -->
+        <section id="view-citas" class="app-view" style="display: none;">
+            <div class="calc-nav-bar">
+                <div class="calc-nav-actions">
+                    <button id="btn-citas-back-dashboard" class="btn btn-back">
+                        ← Volver al Inicio
+                    </button>
+                    <button id="btn-citas-go-calc" class="btn btn-back">
+                        💉 Calculadora de Bombas
+                    </button>
+                </div>
+                <div class="calc-nav-info">
+                    <span class="calc-nav-title">Agenda de Citas y Seguimiento</span>
+                    <span class="offline-badge">🟢 Modo Offline Listo</span>
+                </div>
+            </div>
+
+            <!-- Resumen de Citas y Botón de Nueva Cita -->
+            <div class="citas-summary-bar">
+                <div class="summary-metric">
+                    <span class="metric-label">Total Citas</span>
+                    <span class="metric-value" id="citas-count-total">0</span>
+                </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Citas para Hoy</span>
+                    <span class="metric-value text-primary" id="citas-count-hoy">0</span>
+                </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Programadas</span>
+                    <span class="metric-value" id="citas-count-prog">0</span>
+                </div>
+                <div class="citas-quick-actions">
+                    <button id="btn-toggle-form-cita" class="btn btn-primary">
+                        <span>➕</span> Nueva Cita Pediátrica
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulario Colapsable de Nueva Cita -->
+            <div id="form-cita-wrapper" class="citas-form-card" style="display: none;">
+                <h3 class="citas-form-title">Programar Nueva Cita o Control Clínico</h3>
+                <div id="cita-form-alert" class="alert-box alert-warning" style="display: none;"></div>
+
+                <form id="form-nueva-cita" class="citas-form-grid">
+                    <div class="form-group">
+                        <label for="cita-paciente-select">Paciente Pediátrico:</label>
+                        <select id="cita-paciente-select" class="form-control" required>
+                            <!-- Llenado dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="cita-custom-nombre-group" style="display: none;">
+                        <label for="cita-custom-nombre">Nombre Completo del Paciente:</label>
+                        <input type="text" id="cita-custom-nombre" class="form-control" placeholder="Ej. Camila Morales (Externo)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cita-medico-select">Profesional Responsable:</label>
+                        <select id="cita-medico-select" class="form-control" required>
+                            <!-- Llenado dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cita-fecha">Fecha:</label>
+                        <input type="date" id="cita-fecha" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cita-hora">Hora:</label>
+                        <input type="time" id="cita-hora" class="form-control" required>
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label for="cita-motivo">Motivo de Consulta o Control:</label>
+                        <input type="text" id="cita-motivo" class="form-control" list="motivos-sugeridos-list" placeholder="Ej. Control de infusión de Dopamina y signos vitales" required>
+                        <datalist id="motivos-sugeridos-list">
+                            <!-- Opciones sugeridas -->
+                        </datalist>
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label for="cita-notas">Observaciones Clínicas / Indicaciones:</label>
+                        <textarea id="cita-notas" class="form-control" rows="2" placeholder="Ej. Traer reporte de gasometría matutina y control horario de diuresis..."></textarea>
+                    </div>
+
+                    <div class="form-group-actions">
+                        <button type="submit" class="btn btn-primary" id="btn-guardar-cita">
+                            💾 Agendar Cita
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filtros y Barra de Búsqueda -->
+            <div class="citas-filter-bar">
+                <div class="filter-group">
+                    <label for="citas-filter-estado">Filtrar por Estado:</label>
+                    <select id="citas-filter-estado" class="form-control select-filter">
+                        <option value="TODOS">Todos los Estados</option>
+                        <option value="PROGRAMADA">📅 Programadas</option>
+                        <option value="EN_CURSO">🩺 En Consulta</option>
+                        <option value="COMPLETADA">✅ Concluidas</option>
+                        <option value="CANCELADA">❌ Canceladas</option>
+                    </select>
+                </div>
+                <div class="search-group">
+                    <input type="text" id="citas-search-input" class="form-control" placeholder="🔍 Buscar por paciente, médico o motivo...">
+                </div>
+            </div>
+
+            <!-- Contenedor de Tarjetas de Citas -->
+            <div class="citas-grid" id="citas-container">
+                <!-- Se inyectan dinámicamente las citas -->
+            </div>
         </section>
     </div>
 

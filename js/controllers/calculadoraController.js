@@ -23,15 +23,18 @@ export class CalculadoraController {
         this.currentPatientName = document.getElementById('current-patient-name');
         this.btnDeletePatient = document.getElementById('btn-delete-patient');
         this.btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
+        this.btnCalcGoCitas = document.getElementById('btn-calc-go-citas');
 
         this.appState = StorageRepository.loadAppState(defaultMeds);
         this.onBackToDashboard = null;
         this.onGenerarReporte = null;
+        this.onNavigateToCitas = null;
     }
 
     init(options = {}) {
         this.onBackToDashboard = options.onBackToDashboard || null;
         this.onGenerarReporte = options.onGenerarReporte || null;
+        this.onNavigateToCitas = options.onNavigateToCitas || null;
         this.setupGlobalEventListeners();
         this.renderTabs();
         this.renderActivePatient();
@@ -61,6 +64,15 @@ export class CalculadoraController {
                 this.saveState();
                 if (typeof this.onBackToDashboard === 'function') {
                     this.onBackToDashboard();
+                }
+            });
+        }
+
+        if (this.btnCalcGoCitas) {
+            this.btnCalcGoCitas.addEventListener('click', () => {
+                this.saveState();
+                if (typeof this.onNavigateToCitas === 'function') {
+                    this.onNavigateToCitas();
                 }
             });
         }

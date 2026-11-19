@@ -5,6 +5,7 @@
  */
 
 import { defaultMeds } from '../core/catalogoMedicamentos.js';
+import { AgendaService } from '../core/agendaService.js';
 import { StorageRepository } from '../data/storageRepository.js';
 import {
     getActiveInfusions,
@@ -17,18 +18,22 @@ export class DashboardController {
      * @param {Object} options
      * @param {Function} options.onSelectPatient - Callback al seleccionar un paciente (recibe patientId)
      * @param {Function} options.onNewPatient - Callback al crear un nuevo paciente
+     * @param {Function} options.onNavigateToCitas - Callback para navegar al módulo de citas
      */
-    constructor({ onSelectPatient, onNewPatient }) {
+    constructor({ onSelectPatient, onNewPatient, onNavigateToCitas } = {}) {
         this.patientsGrid = document.getElementById('patients-grid');
         this.totalPatientsEl = document.getElementById('dash-total-patients');
         this.activeInfusionsEl = document.getElementById('dash-active-infusions');
+        this.citasHoyEl = document.getElementById('dash-citas-hoy');
         this.btnNewPatient = document.getElementById('btn-dash-new-patient');
         this.btnContinue = document.getElementById('btn-dash-continue');
+        this.btnGoCitas = document.getElementById('btn-dash-go-citas');
         this.offlineBadge = document.getElementById('offline-badge');
         this.calcOfflineBadge = document.getElementById('calc-offline-badge');
 
         this.onSelectPatient = onSelectPatient;
         this.onNewPatient = onNewPatient;
+        this.onNavigateToCitas = onNavigateToCitas;
 
         this.activePatientId = null;
     }
@@ -53,6 +58,14 @@ export class DashboardController {
             this.btnContinue.addEventListener('click', () => {
                 if (typeof this.onSelectPatient === 'function') {
                     this.onSelectPatient(this.activePatientId);
+                }
+            });
+        }
+
+        if (this.btnGoCitas) {
+            this.btnGoCitas.addEventListener('click', () => {
+                if (typeof this.onNavigateToCitas === 'function') {
+                    this.onNavigateToCitas();
                 }
             });
         }
@@ -111,6 +124,11 @@ export class DashboardController {
 
         if (this.activeInfusionsEl) {
             this.activeInfusionsEl.innerText = totalActiveInfusions;
+        }
+
+        if (this.citasHoyEl) {
+            const citas = StorageRepository.loadCitas();
+            this.citasHoyEl.innerText = AgendaService.contarCitasHoy(citas);
         }
 
         // Actualizar botón de continuación

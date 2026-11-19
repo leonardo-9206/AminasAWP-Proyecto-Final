@@ -80,11 +80,40 @@ export class StorageRepository {
 
     /**
      * Carga la lista de citas programadas.
+     * Si no hay citas previas, inicializa con citas de ejemplo para demostración clínica.
      * @returns {Array} citas
      */
     static loadCitas() {
         const saved = localStorage.getItem(STORAGE_KEYS.CITAS_DATA);
-        if (!saved) return [];
+        if (!saved) {
+            const hoy = new Date().toISOString().split('T')[0];
+            const defaultCitas = [
+                {
+                    id: 1,
+                    pacienteId: 1,
+                    pacienteNombre: 'Paciente 1',
+                    medicoResponsable: 'Dr. Alejandro Morales (Pediatra General)',
+                    fecha: hoy,
+                    hora: '10:00',
+                    motivo: 'Control y titulación de aminas vasoactivas',
+                    estado: 'PROGRAMADA',
+                    notas: 'Evaluar descenso gradual de Dopamina según presión arterial media.'
+                },
+                {
+                    id: 2,
+                    pacienteId: 1,
+                    pacienteNombre: 'Paciente 1',
+                    medicoResponsable: 'Dra. Sofía Herrera (Médico Intensivista UCIP)',
+                    fecha: hoy,
+                    hora: '14:30',
+                    motivo: 'Valoración hemodinámica y retiro de vía venosa central',
+                    estado: 'PROGRAMADA',
+                    notas: 'Verificar tiempos de coagulación y plaquetas previos.'
+                }
+            ];
+            this.saveCitas(defaultCitas);
+            return defaultCitas;
+        }
         try {
             return JSON.parse(saved) || [];
         } catch (e) {
