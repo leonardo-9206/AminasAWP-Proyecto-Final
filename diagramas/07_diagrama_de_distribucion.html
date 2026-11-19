@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagrama de Distribución (Despliegue) — Aminas PWA</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1f2937; background: #fff; max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; line-height: 1.5; font-size: 14px; }
+  h1 { color: #0b4f7c; font-size: 26px; border-bottom: 3px solid #0077b6; padding-bottom: 8px; }
+  h2 { color: #0b4f7c; font-size: 20px; margin-top: 36px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+  h3 { color: #0f172a; font-size: 17px; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 13px; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #e0f2fe; color: #0b4f7c; }
+  code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
+  pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; overflow-x: auto; border-radius: 6px; }
+  pre code { background: none; padding: 0; }
+  pre.mermaid { background: #fff; border: none; text-align: center; }
+  blockquote { border-left: 4px solid #0077b6; background: #f0f9ff; margin: 12px 0; padding: 8px 14px; color: #334155; }
+  img { max-width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; margin: 8px 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .hint { color: #64748b; font-size: 12px; }
+  .grid-clases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin: 12px 0; }
+  .grid-clases pre.mermaid { margin: 0; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; }
+  @media print {
+    .hint { display: none; }
+    body { padding: 0; max-width: none; }
+    h2 { break-before: auto; }
+    h3, table, pre.mermaid, img { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<p class="hint">Para PDF: Ctrl + P → Guardar como PDF. (Necesita internet la primera vez para dibujar los diagramas.)</p>
+<div id="contenido"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  const fuente = "# Diagrama de Distribución (Despliegue) — Aminas PWA\n\n> **Diseño Orientado a Objetos.** Muestra los **nodos físicos** (dispositivos y entornos de ejecución), los **artefactos** (archivos) que se instalan en cada uno y las **conexiones** entre ellos.\n> Aminas es una **PWA offline-first**: el servidor solo se usa para descargar e instalar la aplicación; después todo se ejecuta y se guarda en el dispositivo del usuario, sin internet.\n\n---\n\n## 1. Diagrama\n\n```mermaid\nflowchart TB\n    classDef device fill:#e0f2fe,stroke:#0369a1,stroke-width:2px,color:#0c4a6e;\n    classDef env fill:#f0f9ff,stroke:#0284c7,stroke-dasharray:4 3,color:#0c4a6e;\n    classDef art fill:#ffffff,stroke:#64748b,color:#1e293b,text-align:left;\n    classDef store fill:#fef9c3,stroke:#ca8a04,color:#713f12;\n    classDef ext fill:#f1f5f9,stroke:#94a3b8,color:#334155;\n\n    subgraph SRV [\"«device» Servidor web estático (HTTPS)\"]\n        subgraph HTTP [\"«execution environment» Servidor HTTP de archivos\"]\n            A1[\"«artifact» index.html<br/>«artifact» style.css<br/>«artifact» manifest.json + icono.png<br/>«artifact» sw.js<br/>«artifact» js/ (19 módulos ES6)\"]:::art\n        end\n    end\n\n    subgraph DEV [\"«device» Dispositivo del personal (celular, tablet o PC)\"]\n        subgraph OS [\"«execution environment» Sistema operativo (Android, iOS, Windows)\"]\n            subgraph NAV [\"«execution environment» Navegador (Chrome, Edge, Safari)\"]\n                C2[\"«component»<br/>Service Worker (sw.js)\"]:::art\n                C1[\"«component»<br/>Aminas PWA (SPA)\"]:::art\n                S1[(\"«store» Cache Storage<br/>aminas-pwa-v16\")]:::store\n                S2[(\"«store» localStorage<br/>5 claves\")]:::store\n            end\n        end\n    end\n\n    IMP[\"«device»<br/>Impresora / PDF\"]:::ext\n    WA[\"«external app»<br/>WhatsApp\"]:::ext\n    BOMBA[\"«device»<br/>Bomba de infusión\"]:::ext\n\n    A1 -- \"HTTPS (solo instalación y actualizaciones)\" --> C2\n    C2 -- \"guarda y sirve el App Shell\" --> S1\n    C2 -- \"entrega archivos\" --> C1\n    C1 -- \"lee / escribe datos (JSON)\" --> S2\n    C1 -- \"window.print()\" --> IMP\n    C1 -- \"portapapeles\" --> WA\n    C1 -. \"programación manual (sin conexión)\" .-> BOMBA\n\n    class SRV,DEV device\n    class HTTP,OS,NAV env\n```\n\n---\n\n## 2. Nodos\n\n| Nodo | Tipo | Descripción | Requisitos |\n| :--- | :--- | :--- | :--- |\n| **Servidor web estático** | «device» | Aloja los archivos de la PWA. No ejecuta lógica ni guarda datos de pacientes. | HTTPS (los Service Workers solo funcionan con HTTPS o `localhost`). Opciones: GitHub Pages, Netlify o el servidor del hospital |\n| **Dispositivo del personal** | «device» | Celular, tablet o computadora del área (UCIP, piso, recepción) | Navegador moderno con soporte de Service Worker y `localStorage` |\n| **Sistema operativo** | «execution environment» | Permite **instalar** la PWA en la pantalla de inicio (`display: standalone`) | Android, iOS/iPadOS o Windows |\n| **Navegador** | «execution environment» | Ejecuta la aplicación, el Service Worker y el almacenamiento local | Chrome, Edge o Safari actualizados |\n| **Impresora / PDF** | «device» externo | Recibe el reporte de entrega de guardia | Cualquiera configurada en el sistema operativo |\n| **WhatsApp** | «external app» | Recibe el resumen pegado desde el portapapeles | Instalado en el dispositivo o en WhatsApp Web |\n| **Bomba de infusión** | «device» externo | No tiene conexión con el sistema; el usuario transcribe la velocidad | — |\n\n## 3. Artefactos y componentes\n\n| Artefacto / componente | Ubicación | Descripción |\n| :--- | :--- | :--- |\n| `index.html`, `style.css` | Servidor → caché del navegador | Estructura y estilos de las 4 vistas y los 2 modales |\n| `manifest.json`, `icono.png` | Servidor → caché | Permite instalar la app con nombre, ícono y color |\n| `sw.js` | Servidor → navegador | **Service Worker**: al instalarse guarda 24 archivos en *Cache Storage* y después los sirve **sin internet** (estrategia *cache first*) |\n| `js/` (19 módulos ES6) | Servidor → caché | Capas de controladores, dominio, datos y vistas |\n| **Cache Storage** `aminas-pwa-v16` | Navegador | Copia local del *App Shell*; al publicar una versión nueva se cambia el número y se borra la anterior |\n| **localStorage** | Navegador | Datos del sistema: `aminas_pwa_data`, `aminas_citas_data`, `aminas_usuarios_data`, `aminas_auth_data`, `aminas_historial_data` |\n\n## 4. Conexiones\n\n| Conexión | Protocolo / mecanismo | Cuándo ocurre |\n| :--- | :--- | :--- |\n| Servidor → Navegador | HTTPS | Primera instalación y cuando hay versión nueva. **No** se envían datos de pacientes al servidor |\n| Aplicación ↔ localStorage | API Web Storage (JSON) | En cada cambio (guardado automático) |\n| Service Worker ↔ Cache Storage | Cache API | Instalación (`install`), cada petición (`fetch`) y limpieza de versiones (`activate`) |\n| Aplicación → Impresora | `window.print()` + estilos `@media print` | Al imprimir o guardar el reporte en PDF |\n| Aplicación → WhatsApp | Portapapeles (`navigator.clipboard`) | Al copiar el resumen de guardia |\n| Usuario → Bomba de infusión | Manual | Al programar la velocidad calculada |\n\n---\n\n## 5. Consideraciones del despliegue\n\n1. **Funcionamiento sin internet:** después de la primera carga, la aplicación abre y opera completamente offline.\n2. **Privacidad:** los datos clínicos **nunca salen del dispositivo**; no hay base de datos en servidor.\n3. **Datos por dispositivo:** cada equipo tiene su propia información (no hay sincronización entre dispositivos). La arquitectura con `StorageRepository` permite agregar después un backend con sincronización sin cambiar las demás capas.\n4. **Actualizaciones:** se publica en el servidor y se incrementa la versión de caché en `sw.js` (`aminas-pwa-v16` → `v17`).\n5. **Estado actual del proyecto:** el repositorio no tiene GitHub Pages activado. Para la revisión en laboratorio la app se sirve desde un servidor local (`http://localhost`), que el navegador acepta igual que HTTPS para el Service Worker. Para dejarla instalable en celulares se recomienda activar **GitHub Pages** en la rama principal.\n";
+  const renderer = new marked.Renderer();
+  const codeOriginal = renderer.code.bind(renderer);
+  renderer.code = function (code, lang) {
+    if (lang === 'mermaid') {
+      const esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<pre class="mermaid">' + esc + '</pre>';
+    }
+    return codeOriginal(code, lang);
+  };
+  document.getElementById('contenido').innerHTML = marked.parse(fuente, { renderer, gfm: true });
+  mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true, htmlLabels: true } });
+  mermaid.run({ querySelector: 'pre.mermaid' }).then(() => { document.body.dataset.listo = '1'; })
+    .catch(err => { document.body.dataset.listo = 'error'; console.error(err); });
+</script>
+</body>
+</html>
