@@ -1792,11 +1792,19 @@ body.modal-open {
     padding-top: 10px;
     display: flex;
     justify-content: flex-end;
+    gap: 6px;
 }
 
 .btn-select-profile {
     width: 100%;
     justify-content: center;
+}
+
+/* Botones de Editar / Eliminar profesional: tamaño fijo, sin partir el texto */
+.btn-edit-profile,
+.btn-delete-profile {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .signature-text {

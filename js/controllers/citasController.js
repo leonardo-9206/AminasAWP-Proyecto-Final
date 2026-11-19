@@ -87,6 +87,12 @@ export class CitasController {
         return PermisosService.puede(this.getActiveUser(), accion);
     }
 
+    /** Nombre vigente del paciente de una cita (registrado: nombre actual; externo: el capturado). */
+    nombrePaciente(cita) {
+        const nombres = this.nombresPacientes || new Map();
+        return nombres.get(cita.pacienteId) || cita.pacienteNombre;
+    }
+
     setDefaultDateTime() {
         const now = new Date();
         const hoy = now.toISOString().split('T')[0];
@@ -302,7 +308,7 @@ export class CitasController {
         if (empalme) {
             this.showFormAlert(
                 `El horario ${citaData.fecha} a las ${citaData.hora} hrs ya está ocupado para ${citaData.medicoResponsable} ` +
-                `(cita de ${empalme.pacienteNombre}). Elige otra hora o profesional.`
+                `(cita de ${this.nombrePaciente(empalme)}). Elige otra hora o profesional.`
             );
             return;
         }
@@ -395,7 +401,7 @@ export class CitasController {
         const cita = this.citas.find(c => c.id === citaId);
         if (!cita) return;
 
-        if (newState === ESTADOS_CITA.CANCELADA && !confirm(`¿Cancelar la cita de ${cita.pacienteNombre}?`)) {
+        if (newState === ESTADOS_CITA.CANCELADA && !confirm(`¿Cancelar la cita de ${this.nombrePaciente(cita)}?`)) {
             return;
         }
 
@@ -414,7 +420,7 @@ export class CitasController {
         }
 
         const cita = this.citas.find(c => c.id === citaId);
-        const nombre = cita ? cita.pacienteNombre : 'esta cita';
+        const nombre = cita ? this.nombrePaciente(cita) : 'esta cita';
 
         if (confirm(`¿Estás seguro de eliminar el registro de cita para ${nombre}?`)) {
             this.citas = this.citas.filter(c => c.id !== citaId);
@@ -440,10 +446,14 @@ export class CitasController {
         // Cargar citas persistidas
         this.citas = StorageRepository.loadCitas();
 
+        // Pacientes registrados: las citas muestran siempre el nombre ACTUAL del paciente
+        // (si se renombró después de agendar). Los pacientes externos conservan el nombre capturado.
+        const appState = StorageRepository.loadAppState(defaultMeds);
+        const patients = appState.patients || [];
+        this.nombresPacientes = new Map(patients.map(p => [p.id, p.name || `Paciente ${p.id}`]));
+
         // Si se está editando, no se reconstruye el formulario para no perder lo capturado
         if (this.editingCitaId === null) {
-            const appState = StorageRepository.loadAppState(defaultMeds);
-            const patients = appState.patients || [];
             const usuarios = StorageRepository.loadUsuarios(AuthService.getUsuariosPredefinidos());
 
             populatePacientesSelect(this.pacienteSelect, patients);
@@ -475,7 +485,14 @@ export class CitasController {
     }
 
     renderList() {
-        const citasFiltradas = AgendaService.filtrarCitas(this.citas, {
+        const nombres = this.nombresPacientes || new Map();
+        const citasVista = this.citas.map(c =>
+            (c.pacienteId !== null && c.pacienteId !== undefined && nombres.has(c.pacienteId))
+                ? { ...c, pacienteNombre: nombres.get(c.pacienteId) }
+                : c
+        );
+
+        const citasFiltradas = AgendaService.filtrarCitas(citasVista, {
             estado: this.filtroEstadoActual,
             busqueda: this.busquedaActual
         });
