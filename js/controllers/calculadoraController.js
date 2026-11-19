@@ -21,17 +21,46 @@ export class CalculadoraController {
         this.tabsContainer = document.getElementById('tabs-container');
         this.currentPatientName = document.getElementById('current-patient-name');
         this.btnDeletePatient = document.getElementById('btn-delete-patient');
+        this.btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
 
         this.appState = StorageRepository.loadAppState(defaultMeds);
+        this.onBackToDashboard = null;
     }
 
-    init() {
+    init(options = {}) {
+        this.onBackToDashboard = options.onBackToDashboard || null;
         this.setupGlobalEventListeners();
         this.renderTabs();
         this.renderActivePatient();
     }
 
+    openPatient(patientId) {
+        this.appState = StorageRepository.loadAppState(defaultMeds);
+        if (patientId) {
+            const exists = this.appState.patients.some(p => p.id === patientId);
+            if (exists) {
+                this.appState.activePatientId = patientId;
+                StorageRepository.saveAppState(this.appState);
+            }
+        }
+        this.renderTabs();
+        this.renderActivePatient();
+    }
+
+    addNewPatientAndOpen() {
+        this.appState = StorageRepository.loadAppState(defaultMeds);
+        this.createNewPatient();
+    }
+
     setupGlobalEventListeners() {
+        if (this.btnBackToDashboard) {
+            this.btnBackToDashboard.addEventListener('click', () => {
+                this.saveState();
+                if (typeof this.onBackToDashboard === 'function') {
+                    this.onBackToDashboard();
+                }
+            });
+        }
         this.pesoInput.addEventListener('input', () => {
             this.recalculateAllRows();
             this.saveState();

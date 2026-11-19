@@ -11,54 +11,104 @@
 </head>
 <body>
     <div class="app-container">
-        <header>
-            <h1>Aminas PWA</h1>
-            <p class="subtitle">Calculadora de Infusiones Pediátricas</p>
-        </header>
+        <!-- VISTA 1: DASHBOARD / BIENVENIDA -->
+        <section id="view-dashboard" class="app-view">
+            <header class="dashboard-header">
+                <div class="brand-title-wrap">
+                    <h1>Aminas PWA</h1>
+                    <span class="offline-badge" id="offline-badge">🟢 Modo Offline Listo</span>
+                </div>
+                <p class="subtitle">Sistema Integral de Infusiones y Gestión Pediátrica</p>
+            </header>
 
-        <section class="tabs-section" id="tabs-container">
-            <!-- Pestañas dinámicas aquí -->
+            <!-- Barra de métricas y acciones rápidas -->
+            <div class="dashboard-summary-bar">
+                <div class="summary-metric">
+                    <span class="metric-label">Pacientes en Seguimiento</span>
+                    <span class="metric-value" id="dash-total-patients">0</span>
+                </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Infusiones Activas</span>
+                    <span class="metric-value" id="dash-active-infusions">0</span>
+                </div>
+                <div class="dashboard-quick-actions">
+                    <button id="btn-dash-new-patient" class="btn btn-primary">
+                        <span>➕</span> Nuevo Paciente
+                    </button>
+                    <button id="btn-dash-continue" class="btn btn-secondary">
+                        <span>➔</span> Continuar Consulta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grilla de Pacientes -->
+            <div class="patients-grid-section">
+                <div class="section-title-wrap">
+                    <h2 class="section-title">Pacientes Activos</h2>
+                    <span class="section-subtitle">Selecciona un paciente para calcular y ajustar bombas de infusión</span>
+                </div>
+                <div class="patients-grid" id="patients-grid">
+                    <!-- Tarjetas renderizadas dinámicamente -->
+                </div>
+            </div>
         </section>
 
-        <section class="patient-section">
-            <div class="patient-header">
-                <h2 id="current-patient-name" contenteditable="true" title="Toca para renombrar">Paciente 1</h2>
-                <span style="font-size: 14px; color: gray; margin-left: 10px; cursor: pointer;" title="Toca el nombre para editar">✏️ (Toca para editar)</span>
-                <div style="flex-grow: 1;"></div>
-                <button id="btn-delete-patient" class="btn btn-outline-danger">Borrar Paciente</button>
+        <!-- VISTA 2: CALCULADORA MULTI-PACIENTE -->
+        <section id="view-calculadora" class="app-view" style="display: none;">
+            <div class="calc-nav-bar">
+                <button id="btn-back-to-dashboard" class="btn btn-back">
+                    ← Volver al Inicio
+                </button>
+                <div class="calc-nav-info">
+                    <span class="calc-nav-title">Calculadora de Infusiones</span>
+                    <span class="offline-badge" id="calc-offline-badge">🟢 Modo Offline Listo</span>
+                </div>
             </div>
-            <div class="input-group">
-                <label for="peso">Peso del Paciente (kg):</label>
-                <input type="number" id="peso" step="0.1" min="0" placeholder="Ej. 10.5">
-            </div>
-        </section>
 
-        <section class="table-section">
-            <div class="table-responsive">
-                <table id="infusiones-table">
-                    <thead>
-                        <tr>
-                            <th>Medicamento</th>
-                            <th>Dosis Real</th>
-                            <th>Unidad</th>
-                            <th>Fármaco</th>
-                            <th>Diluyente (ml)</th>
-                            <th>Vol. Final (ml)</th>
-                            <th>Velocidad (ml/h)</th>
-                            <th>Equivalencia (1 ml/h)</th>
-                            <th>Velocidad 2 (ml/h)</th>
-                            <th>Equivalencia 2</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body">
-                        <!-- Las filas se insertarán dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
-            <div class="actions">
-                <button id="btn-add-row" class="btn btn-primary">+ Agregar Medicamento</button>
-            </div>
+            <section class="tabs-section" id="tabs-container">
+                <!-- Pestañas dinámicas aquí -->
+            </section>
+
+            <section class="patient-section">
+                <div class="patient-header">
+                    <h2 id="current-patient-name" contenteditable="true" title="Toca para renombrar">Paciente 1</h2>
+                    <span style="font-size: 14px; color: gray; margin-left: 10px; cursor: pointer;" title="Toca el nombre para editar">✏️ (Toca para editar)</span>
+                    <div style="flex-grow: 1;"></div>
+                    <button id="btn-delete-patient" class="btn btn-outline-danger">Borrar Paciente</button>
+                </div>
+                <div class="input-group">
+                    <label for="peso">Peso del Paciente (kg):</label>
+                    <input type="number" id="peso" step="0.1" min="0" placeholder="Ej. 10.5">
+                </div>
+            </section>
+
+            <section class="table-section">
+                <div class="table-responsive">
+                    <table id="infusiones-table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Dosis Real</th>
+                                <th>Unidad</th>
+                                <th>Fármaco</th>
+                                <th>Diluyente (ml)</th>
+                                <th>Vol. Final (ml)</th>
+                                <th>Velocidad (ml/h)</th>
+                                <th>Equivalencia (1 ml/h)</th>
+                                <th>Velocidad 2 (ml/h)</th>
+                                <th>Equivalencia 2</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Las filas se insertarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="actions">
+                    <button id="btn-add-row" class="btn btn-primary">+ Agregar Medicamento</button>
+                </div>
+            </section>
         </section>
     </div>
 
