@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagrama de Navegación de Pantallas — Aminas PWA</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1f2937; background: #fff; max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; line-height: 1.5; font-size: 14px; }
+  h1 { color: #0b4f7c; font-size: 26px; border-bottom: 3px solid #0077b6; padding-bottom: 8px; }
+  h2 { color: #0b4f7c; font-size: 20px; margin-top: 36px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+  h3 { color: #0f172a; font-size: 17px; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 13px; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #e0f2fe; color: #0b4f7c; }
+  code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
+  pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; overflow-x: auto; border-radius: 6px; }
+  pre code { background: none; padding: 0; }
+  pre.mermaid { background: #fff; border: none; text-align: center; }
+  blockquote { border-left: 4px solid #0077b6; background: #f0f9ff; margin: 12px 0; padding: 8px 14px; color: #334155; }
+  img { max-width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; margin: 8px 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .hint { color: #64748b; font-size: 12px; }
+  .grid-clases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin: 12px 0; }
+  .grid-clases pre.mermaid { margin: 0; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; }
+  @media print {
+    .hint { display: none; }
+    body { padding: 0; max-width: none; }
+    h2 { break-before: auto; }
+    h3, table, pre.mermaid, img { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<p class="hint">Para PDF: Ctrl + P → Guardar como PDF. (Necesita internet la primera vez para dibujar los diagramas.)</p>
+<div id="contenido"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  const fuente = "# Diagrama de Navegación de Pantallas — Aminas PWA\n\n> **Diseño Estructurado Moderno · Diseño de pantallas.** Muestra cómo se pasa de una pantalla a otra en la aplicación final (rama `develop`): **4 vistas** principales y **2 ventanas modales**, con el botón que provoca cada cambio y las restricciones por rol.\n> Actualiza el diagrama de vistas de la primera versión, que solo tenía Dashboard, Calculadora y Reporte.\n\n---\n\n## 1. Pantallas del sistema\n\n| Código | Pantalla | Tipo | Casos de uso | Quién puede entrar |\n| :---: | :--- | :--- | :--- | :--- |\n| **V1** | Dashboard / Inicio | Vista | CU02, CU03 | Todos |\n| **V2** | Calculadora de Infusiones | Vista | CU03–CU10 | Médico, Residente, Enfermería (**no** Recepción) |\n| **V3** | Agenda de Citas (con formulario de alta/edición) | Vista | CU18–CU23 | Todos (los botones cambian según el rol) |\n| **V4** | Historial de Entregas de Guardia | Vista | CU15–CU17 | Todos |\n| **M1** | Reporte de Guardia / Ficha Médica | Modal | CU11–CU14, CU16 | Médico, Residente, Enfermería |\n| **M2** | Control de Acceso (Perfiles · Contraseña · Registro/Edición) | Modal | CU01, CU24–CU26 | Todos (registrar/editar a otros: Médico y Recepción) |\n\nLa **barra superior** (marca y píldora del usuario en turno) está visible en todas las vistas; desde ella siempre se abre **M2**.\n\n---\n\n## 2. Diagrama de navegación\n\n```mermaid\nflowchart TB\n    classDef vista fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#1e3a8a;\n    classDef modal fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95;\n    classDef inicio fill:#dcfce7,stroke:#15803d,color:#14532d;\n    classDef sub fill:#f8fafc,stroke:#94a3b8,color:#334155;\n\n    START([\"Abrir la app\"]):::inicio\n    CARGA[\"Cargar datos del dispositivo<br/>y usuario en turno\"]:::sub\n\n    V1[\"V1 · Dashboard / Inicio\"]:::vista\n    V2[\"V2 · Calculadora de Infusiones\"]:::vista\n    V3[\"V3 · Agenda de Citas\"]:::vista\n    V4[\"V4 · Historial de Entregas\"]:::vista\n\n    M1[\"M1 · Reporte de Guardia (modal)\"]:::modal\n    M2[\"M2 · Control de Acceso (modal)\"]:::modal\n\n    F3[\"Formulario de cita<br/>(alta / edición)\"]:::sub\n    P1[\"Perfiles\"]:::sub\n    P2[\"Contraseña\"]:::sub\n    P3[\"Registro / edición<br/>de profesional\"]:::sub\n\n    START --> CARGA --> V1\n\n    V1 -- \"Tarjeta de paciente / Continuar<br/>[rol clínico]\" --> V2\n    V1 -- \"Nuevo Paciente<br/>[Médico o Residente]\" --> V2\n    V1 -- \"Agenda de Citas\" --> V3\n    V1 -- \"Historial de Reportes\" --> V4\n\n    V2 -- \"Volver al Inicio\" --> V1\n    V2 -- \"Agenda de Citas\" --> V3\n    V2 -- \"Pestaña / + Nuevo\" --> V2\n    V2 -- \"Generar Reporte\" --> M1\n\n    V3 -- \"Volver al Inicio\" --> V1\n    V3 -- \"Calculadora de Bombas / Ver Bombas<br/>[rol clínico]\" --> V2\n    V3 -- \"Nueva Cita / Editar\" --> F3\n    F3 -- \"Agendar / Guardar Cambios /<br/>Cancelar Edición\" --> V3\n\n    V4 -- \"Volver al Inicio\" --> V1\n    V4 -- \"Ver / Editar Observaciones\" --> M1\n\n    M1 -- \"Cerrar / ✕ / Esc\" --> V2\n    M1 -- \"Cerrar (si se abrió desde Historial)\" --> V4\n\n    V1 & V2 & V3 & V4 -. \"Píldora de usuario\" .-> M2\n    M2 --- P1\n    P1 -- \"Ingresar Contraseña\" --> P2\n    P2 -- \"Volver a la Lista\" --> P1\n    P1 -- \"Registrar / Editar<br/>[Médico o Recepción, o propio perfil]\" --> P3\n    P3 -- \"Guardar edición / Cancelar\" --> P1\n    FIN[\"Cierra M2 y regresa a la vista actual<br/>(Recepción en V2 → V1)\"]:::sub\n    P2 -- \"Contraseña correcta: cambia el turno\" --> FIN\n    P3 -- \"Registrar: inicia turno del nuevo profesional\" --> FIN\n```\n\n**Lectura del diagrama**\n- Las cajas azules son **vistas** (ocupan toda la pantalla); las moradas son **modales** (aparecen encima de la vista actual).\n- `[condición]` indica que la transición solo existe para ciertos roles. Si el rol no tiene permiso, el botón no aparece; y si se intenta por otra vía, se muestra *\"🔒 Acción no permitida\"* y se queda en la pantalla actual.\n- Al cambiar de turno (M2), todas las vistas se vuelven a dibujar con los permisos del nuevo rol. Si el nuevo rol es **Recepción** y estaba en la Calculadora, regresa a **V1**.\n- Los modales M1 y M2 se cierran con **Cerrar**, la **✕**, clic fuera de la ventana o la tecla **Esc**, y regresan a la vista de donde se abrieron.\n\n---\n\n## 3. Acciones de salida desde M1 (Reporte)\n\n| Botón | Resultado | No cambia de pantalla |\n| :--- | :--- | :---: |\n| 💾 Guardar en Historial / Actualizar Observaciones | Guarda el snapshot o las observaciones y muestra un aviso | ✅ |\n| 📋 Copiar para WhatsApp | Copia el resumen al portapapeles | ✅ |\n| 🖨️ Imprimir / Guardar PDF | Abre el diálogo de impresión del navegador | ✅ |\n\n---\n\n## 4. Comportamiento responsivo\n\n| Pantalla | Escritorio (> 768 px) | Celular (≤ 768 px) |\n| :--- | :--- | :--- |\n| V2 Calculadora | Tabla de 11 columnas (con desplazamiento horizontal si no cabe) | Cada infusión se convierte en una **tarjeta** con una etiqueta por campo |\n| Barra superior y navegación | Marca y usuario en una línea; botones de navegación en fila | Los elementos se acomodan en varias líneas |\n| V1, V3, V4 | Tarjetas en cuadrícula | Las tarjetas se reacomodan al ancho de la pantalla |\n| Impresión de M1 | Se oculta la interfaz y queda solo la ficha en hoja blanca | Igual |\n";
+  const renderer = new marked.Renderer();
+  const codeOriginal = renderer.code.bind(renderer);
+  renderer.code = function (code, lang) {
+    if (lang === 'mermaid') {
+      const esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<pre class="mermaid">' + esc + '</pre>';
+    }
+    return codeOriginal(code, lang);
+  };
+  document.getElementById('contenido').innerHTML = marked.parse(fuente, { renderer, gfm: true });
+  mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true, htmlLabels: true } });
+  mermaid.run({ querySelector: 'pre.mermaid' }).then(() => { document.body.dataset.listo = '1'; })
+    .catch(err => { document.body.dataset.listo = 'error'; console.error(err); });
+</script>
+</body>
+</html>

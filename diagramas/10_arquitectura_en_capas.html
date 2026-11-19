@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagrama de Arquitectura en Capas — Aminas PWA</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1f2937; background: #fff; max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; line-height: 1.5; font-size: 14px; }
+  h1 { color: #0b4f7c; font-size: 26px; border-bottom: 3px solid #0077b6; padding-bottom: 8px; }
+  h2 { color: #0b4f7c; font-size: 20px; margin-top: 36px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+  h3 { color: #0f172a; font-size: 17px; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 13px; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #e0f2fe; color: #0b4f7c; }
+  code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
+  pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; overflow-x: auto; border-radius: 6px; }
+  pre code { background: none; padding: 0; }
+  pre.mermaid { background: #fff; border: none; text-align: center; }
+  blockquote { border-left: 4px solid #0077b6; background: #f0f9ff; margin: 12px 0; padding: 8px 14px; color: #334155; }
+  img { max-width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; margin: 8px 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .hint { color: #64748b; font-size: 12px; }
+  .grid-clases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin: 12px 0; }
+  .grid-clases pre.mermaid { margin: 0; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; }
+  @media print {
+    .hint { display: none; }
+    body { padding: 0; max-width: none; }
+    h2 { break-before: auto; }
+    h3, table, pre.mermaid, img { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<p class="hint">Para PDF: Ctrl + P → Guardar como PDF. (Necesita internet la primera vez para dibujar los diagramas.)</p>
+<div id="contenido"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  const fuente = "# Diagrama de Arquitectura en Capas — Aminas PWA\n\n> **Diseño del sistema.** Organización real del código de la versión final (rama `develop`): 4 capas más la infraestructura PWA. Las flechas del diagrama 2 se obtuvieron de los `import` de cada archivo, así que representan exactamente las dependencias del código.\n> Actualiza el diagrama de arquitectura de la primera versión, que incluía componentes planeados que no se construyeron (por ejemplo, un adaptador de API simulada).\n\n---\n\n## 1. Vista general de las capas\n\n```mermaid\nflowchart TB\n    classDef c1 fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e;\n    classDef c2 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95;\n    classDef c3 fill:#dcfce7,stroke:#15803d,color:#14532d;\n    classDef c4 fill:#fef9c3,stroke:#ca8a04,color:#713f12;\n    classDef c5 fill:#f1f5f9,stroke:#64748b,color:#334155;\n\n    U([\"👤 Personal de salud\"])\n\n    subgraph L1 [\"1 · PRESENTACIÓN — index.html, style.css, js/ui/\"]\n        P[\"4 vistas + 2 modales<br/>Generación de HTML (vistas)<br/>Estilos responsivos e impresión\"]:::c1\n    end\n    subgraph L2 [\"2 · CONTROLADORES — js/main.js, js/controllers/\"]\n        C[\"Navegación entre vistas · Eventos del usuario<br/>Control de acceso al navegar · Coordinación de servicios\"]:::c2\n    end\n    subgraph L3 [\"3 · DOMINIO / LÓGICA DE NEGOCIO — js/core/\"]\n        D[\"Cálculo fisiológico · Catálogo de fármacos<br/>Reglas de agenda · Usuarios · Permisos (RBAC) · Historial\"]:::c3\n    end\n    subgraph L4 [\"4 · PERSISTENCIA — js/data/\"]\n        R[\"StorageRepository (patrón Repositorio)\"]:::c4\n        LS[(\"localStorage<br/>5 claves JSON\")]:::c4\n    end\n    subgraph INF [\"INFRAESTRUCTURA PWA\"]\n        SW[\"sw.js · Service Worker\"]:::c5\n        CS[(\"Cache Storage<br/>App Shell\")]:::c5\n        MF[\"manifest.json · icono.png\"]:::c5\n    end\n\n    U --> P\n    P -- \"eventos (clic, input)\" --> C\n    C -- \"HTML generado / datos para mostrar\" --> P\n    C --> D\n    C --> R\n    R --> LS\n    SW --> CS\n    CS -. \"sirve los archivos sin internet\" .-> P\n    MF -. \"permite instalar la app\" .-> U\n```\n\n**Regla de dependencia:** cada capa solo usa a las capas de abajo. El dominio (capa 3) **no** conoce la interfaz ni el almacenamiento: recibe datos y regresa resultados. Por eso el núcleo de cálculo se puede probar o reutilizar por separado.\n\n---\n\n## 2. Módulos y dependencias reales\n\n```mermaid\nflowchart LR\n    classDef c1 fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e;\n    classDef c2 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95;\n    classDef c3 fill:#dcfce7,stroke:#15803d,color:#14532d;\n    classDef c4 fill:#fef9c3,stroke:#ca8a04,color:#713f12;\n\n    subgraph UI [\"Presentación · js/ui\"]\n        authView[\"authView.js\"]:::c1\n        dashboardView[\"dashboardView.js\"]:::c1\n        citasView[\"citasView.js\"]:::c1\n        modalReporteView[\"modalReporteView.js\"]:::c1\n        historialView[\"historialView.js\"]:::c1\n    end\n\n    subgraph CTRL [\"Controladores · js/controllers + main.js\"]\n        main[\"main.js\"]:::c2\n        authC[\"authController.js\"]:::c2\n        dashC[\"dashboardController.js\"]:::c2\n        calcC[\"calculadoraController.js\"]:::c2\n        citasC[\"citasController.js\"]:::c2\n        repC[\"reporteController.js\"]:::c2\n        histC[\"historialController.js\"]:::c2\n    end\n\n    subgraph CORE [\"Dominio · js/core\"]\n        calculo[\"calculoFisiologico.js\"]:::c3\n        catalogo[\"catalogoMedicamentos.js\"]:::c3\n        agenda[\"agendaService.js\"]:::c3\n        auth[\"authService.js\"]:::c3\n        permisos[\"permisosService.js\"]:::c3\n        historial[\"historialService.js\"]:::c3\n    end\n\n    subgraph DATA [\"Persistencia · js/data\"]\n        repo[\"storageRepository.js\"]:::c4\n    end\n\n    main --> authC & dashC & calcC & citasC & repC & histC\n    main --> permisos & repo\n\n    authC --> authView & auth & permisos & repo\n    dashC --> dashboardView & agenda & catalogo & permisos & repo\n    calcC --> calculo & catalogo & permisos & repo\n    citasC --> citasView & agenda & auth & catalogo & permisos & repo\n    repC --> modalReporteView & historial & permisos & repo\n    histC --> historialView & historial & permisos & repo\n\n    dashboardView --> catalogo\n    citasView --> agenda\n    modalReporteView --> calculo & catalogo\n    permisos --> auth\n```\n\n---\n\n## 3. Responsabilidad de cada capa\n\n| Capa | Archivos | Responsabilidad | Qué **no** hace |\n| :--- | :--- | :--- | :--- |\n| **1. Presentación** | `index.html`, `style.css`, `js/ui/authView.js`, `dashboardView.js`, `citasView.js`, `modalReporteView.js`, `historialView.js` | Estructura de las pantallas, estilos responsivos y de impresión, y funciones que convierten datos en HTML | No guarda datos ni aplica reglas de negocio |\n| **2. Controladores** | `js/main.js`, `js/controllers/authController.js`, `dashboardController.js`, `calculadoraController.js`, `citasController.js`, `reporteController.js`, `historialController.js` | Escuchan eventos, leen formularios, llaman a servicios y al repositorio, y cambian de vista. `main.js` crea los controladores y los conecta con funciones (*callbacks*) | No contienen fórmulas ni acceden directo a `localStorage` |\n| **3. Dominio** | `js/core/calculoFisiologico.js`, `catalogoMedicamentos.js`, `agendaService.js`, `authService.js`, `permisosService.js`, `historialService.js` | Fórmulas de infusión, catálogo y rangos, reglas de citas (no empalme), usuarios, matriz de permisos e historial | No toca el HTML ni el almacenamiento |\n| **4. Persistencia** | `js/data/storageRepository.js` | Lee y escribe las 5 claves de `localStorage`, con datos por defecto y manejo de errores | No decide reglas de negocio |\n| **Infraestructura PWA** | `sw.js`, `manifest.json`, `icono.png` | Caché offline (24 archivos, versión `aminas-pwa-v16`) e instalación en el dispositivo | — |\n\n---\n\n## 4. Beneficios de esta arquitectura\n\n1. **Separación de responsabilidades:** cada archivo tiene una sola función clara; un cambio de diseño visual no afecta las fórmulas.\n2. **Núcleo de cálculo protegido:** `calculoFisiologico.js` son funciones puras sin dependencias; ningún otro módulo modifica las fórmulas.\n3. **Permisos centralizados:** todas las reglas de acceso están en `permisosService.js`; agregar un rol solo requiere cambiar la matriz.\n4. **Persistencia reemplazable:** como todo pasa por `StorageRepository`, se puede cambiar `localStorage` por una base de datos o un servidor sin tocar las otras capas.\n5. **Offline real:** el Service Worker sirve la aplicación desde caché, así que funciona sin internet en áreas hospitalarias sin señal.\n";
+  const renderer = new marked.Renderer();
+  const codeOriginal = renderer.code.bind(renderer);
+  renderer.code = function (code, lang) {
+    if (lang === 'mermaid') {
+      const esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<pre class="mermaid">' + esc + '</pre>';
+    }
+    return codeOriginal(code, lang);
+  };
+  document.getElementById('contenido').innerHTML = marked.parse(fuente, { renderer, gfm: true });
+  mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true, htmlLabels: true } });
+  mermaid.run({ querySelector: 'pre.mermaid' }).then(() => { document.body.dataset.listo = '1'; })
+    .catch(err => { document.body.dataset.listo = 'error'; console.error(err); });
+</script>
+</body>
+</html>

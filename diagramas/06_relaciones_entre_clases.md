@@ -1,6 +1,6 @@
 # Diagrama de Relaciones entre Clases — Aminas PWA
 
-> **Análisis Orientado a Objetos.** Muestra **cómo se relacionan** las clases de [`03_diagramas_de_clases.md`](03_diagramas_de_clases.md): tipo de relación, multiplicidad y rol de cada extremo. Para que se lea mejor, aquí las clases aparecen **sin atributos ni métodos**.
+> **Análisis Orientado a Objetos.** Muestra **cómo se relacionan** las clases de [`05_diagramas_de_clases.md`](05_diagramas_de_clases.md): tipo de relación, multiplicidad y rol de cada extremo. Para que se lea mejor, aquí las clases aparecen **sin atributos ni métodos**.
 
 ---
 
@@ -143,8 +143,13 @@ classDiagram
     CitasController ..> StorageRepository
     CitasController ..> CitasView
 
+    DashboardController ..> CatalogoMedicamentos
+    CitasController ..> CatalogoMedicamentos
+
     ModalReporteView ..> CatalogoMedicamentos
     ModalReporteView ..> CalculoFisiologico
+    DashboardView ..> CatalogoMedicamentos
+    CitasView ..> AgendaService
     PermisosService ..> AuthService : usa RolHospitalario
 ```
 

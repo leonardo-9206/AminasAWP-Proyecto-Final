@@ -1,7 +1,7 @@
 # Diagramas de Clases Detalladas — Aminas PWA
 
 > **Análisis Orientado a Objetos.** Clases reales del sistema final (rama `develop`, commit `585b050`), con atributos, tipos, visibilidad y métodos tal como están en el código.
-> Las relaciones entre clases se detallan en [`04_relaciones_entre_clases.md`](04_relaciones_entre_clases.md).
+> Las relaciones entre clases se detallan en [`06_relaciones_entre_clases.md`](06_relaciones_entre_clases.md).
 
 ---
 
@@ -20,7 +20,7 @@
 | `<<repository>>` | Acceso a datos (patrón Repositorio) |
 | `<<boundary>>` | **Vista**: genera el HTML que ve el usuario |
 
-**Organización en capas** (arquitectura en capas): Presentación (`js/ui`) → Controladores (`js/controllers`) → Dominio (`js/core`) → Persistencia (`js/data`).
+**Organización en capas** (ver [`10_arquitectura_en_capas.md`](10_arquitectura_en_capas.md)): Presentación (`js/ui`) → Controladores (`js/controllers`) → Dominio (`js/core`) → Persistencia (`js/data`).
 
 ---
 

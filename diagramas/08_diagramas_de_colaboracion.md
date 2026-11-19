@@ -1,7 +1,7 @@
 # Diagramas de Colaboración (Comunicación) — Aminas PWA
 
 > **Diseño Orientado a Objetos.** Tres diagramas de colaboración (mínimo pedido: 3). Muestran **qué objetos se comunican** y **en qué orden**, poniendo los mensajes numerados sobre los enlaces.
-> Cada uno es **equivalente** a un diagrama de secuencia de [`05_diagramas_de_secuencia.md`](05_diagramas_de_secuencia.md): mismos objetos, mismos mensajes y misma numeración.
+> Cada uno es **equivalente** a un diagrama de secuencia de [`07_diagramas_de_secuencia.md`](07_diagramas_de_secuencia.md): mismos objetos, mismos mensajes y misma numeración.
 
 | Diagrama | Caso de uso | Secuencia equivalente |
 | :---: | :--- | :---: |

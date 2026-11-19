@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagramas de Colaboración (Comunicación) — Aminas PWA</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1f2937; background: #fff; max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; line-height: 1.5; font-size: 14px; }
+  h1 { color: #0b4f7c; font-size: 26px; border-bottom: 3px solid #0077b6; padding-bottom: 8px; }
+  h2 { color: #0b4f7c; font-size: 20px; margin-top: 36px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+  h3 { color: #0f172a; font-size: 17px; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 13px; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #e0f2fe; color: #0b4f7c; }
+  code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
+  pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; overflow-x: auto; border-radius: 6px; }
+  pre code { background: none; padding: 0; }
+  pre.mermaid { background: #fff; border: none; text-align: center; }
+  blockquote { border-left: 4px solid #0077b6; background: #f0f9ff; margin: 12px 0; padding: 8px 14px; color: #334155; }
+  img { max-width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; margin: 8px 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .hint { color: #64748b; font-size: 12px; }
+  .grid-clases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin: 12px 0; }
+  .grid-clases pre.mermaid { margin: 0; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; }
+  @media print {
+    .hint { display: none; }
+    body { padding: 0; max-width: none; }
+    h2 { break-before: auto; }
+    h3, table, pre.mermaid, img { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<p class="hint">Para PDF: Ctrl + P → Guardar como PDF. (Necesita internet la primera vez para dibujar los diagramas.)</p>
+<div id="contenido"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  const fuente = "# Diagramas de Colaboración (Comunicación) — Aminas PWA\n\n> **Diseño Orientado a Objetos.** Tres diagramas de colaboración (mínimo pedido: 3). Muestran **qué objetos se comunican** y **en qué orden**, poniendo los mensajes numerados sobre los enlaces.\n> Cada uno es **equivalente** a un diagrama de secuencia de [`07_diagramas_de_secuencia.md`](07_diagramas_de_secuencia.md): mismos objetos, mismos mensajes y misma numeración.\n\n| Diagrama | Caso de uso | Secuencia equivalente |\n| :---: | :--- | :---: |\n| DC-1 | CU01 Iniciar / cambiar turno | DS-1 |\n| DC-2 | CU11 + CU14 Generar reporte y guardar en historial | DS-3 |\n| DC-3 | CU18 Agendar cita (incluye CU22) | DS-4 |\n\n**Cómo leerlos**\n- Cada caja es un **objeto** (`:Clase`) o una clase con métodos estáticos (`Clase`).\n- Cada línea es un **enlace** (los objetos se conocen o se llaman).\n- Sobre el enlace van los mensajes con su **número de orden**: `1`, `2`, `3`… Los números con punto (`3.1`, `3.2`) son mensajes **anidados** que ocurren mientras se atiende el mensaje 3.\n- `[condición]` = el mensaje solo se envía si se cumple la condición. `*` = se repite.\n\n---\n\n## DC-1 · CU01 Iniciar / cambiar turno\n\n```mermaid\nflowchart TB\n    classDef actor fill:#fde68a,stroke:#b45309,color:#78350f;\n    classDef obj fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a;\n    classDef data fill:#fef9c3,stroke:#ca8a04,color:#713f12;\n\n    U[\"👤 Profesional\"]:::actor\n    AC[\":AuthController\"]:::obj\n    AV[\":AuthView\"]:::obj\n    AS[\"AuthService\"]:::obj\n    PS[\"PermisosService\"]:::obj\n    SR[\"StorageRepository\"]:::obj\n    LS[(\"localStorage\")]:::data\n    M[\":Main\"]:::obj\n\n    U -- \"1: abrir perfiles<br/>4: handleSelectProfile(id)<br/>6: handleVerifyPassword(contraseña)\" --> AC\n    AC -- \"1.1: loadUsuarios()<br/>6.2 [válida]: setActiveUser(profesional)\" --> SR\n    SR -- \"1.1.1: getItem(usuarios)<br/>6.2.1: setItem(auth)\" --> LS\n    AC -- \"2: puede(usuario, USUARIO_GESTIONAR)\" --> PS\n    AC -- \"3: renderProfilesListHtml(...)<br/>5: renderPasswordPromptHtml(p)\" --> AV\n    AC -- \"6.1: validarPassword(p, contraseña)\" --> AS\n    AC -- \"6.3 [válida]: onUserChanged(p)\" --> M\n    M -- \"6.3.1: aplica permisos y redibuja vistas\" --> M\n```\n\n| # | Mensaje | De → A | Propósito |\n| :---: | :--- | :--- | :--- |\n| 1 | abrir perfiles | Profesional → AuthController | Clic en la píldora de usuario |\n| 1.1 | `loadUsuarios()` | AuthController → StorageRepository | Leer el catálogo de profesionales |\n| 2 | `puede(usuario, USUARIO_GESTIONAR)` | AuthController → PermisosService | Decidir si se muestran Editar/Eliminar |\n| 3 | `renderProfilesListHtml()` | AuthController → AuthView | Dibujar las tarjetas |\n| 4–5 | `handleSelectProfile()` / `renderPasswordPromptHtml()` | — | Elegir perfil y pedir contraseña |\n| 6.1 | `validarPassword()` | AuthController → AuthService | Regla de negocio |\n| 6.2 | `setActiveUser()` | AuthController → StorageRepository | Guardar la sesión (solo si es válida) |\n| 6.3 | `onUserChanged()` | AuthController → Main | Reaplicar permisos del nuevo rol |\n\n---\n\n## DC-2 · CU11 + CU14 Generar reporte y guardar en historial\n\n```mermaid\nflowchart TB\n    classDef actor fill:#fde68a,stroke:#b45309,color:#78350f;\n    classDef obj fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a;\n\n    U[\"👤 Personal clínico\"]:::actor\n    CC[\":CalculadoraController\"]:::obj\n    M[\":Main\"]:::obj\n    AC[\":AuthController\"]:::obj\n    RC[\":ReporteController\"]:::obj\n    MV[\":ModalReporteView\"]:::obj\n    PS[\"PermisosService\"]:::obj\n    HS[\"HistorialService\"]:::obj\n    SR[\"StorageRepository\"]:::obj\n    HC[\":HistorialController\"]:::obj\n\n    U -- \"1: Generar Reporte\" --> CC\n    CC -- \"1.1: saveState()<br/>1.2: getActivePatientData()\" --> CC\n    CC -- \"1.3: onGenerarReporte(paciente)\" --> M\n    M -- \"1.3.1: getActiveUser()\" --> AC\n    M -- \"1.3.2: open(paciente, profesional)\" --> RC\n    RC -- \"1.3.2.1: getActiveInfusionsForReport()<br/>1.3.2.2: renderReportCardHtml()\" --> MV\n    RC -- \"1.3.2.3: puede(REPORTE_GENERAR)<br/>2.1: puede(REPORTE_GENERAR)\" --> PS\n    U -- \"2: Guardar en Historial (con observaciones)\" --> RC\n    RC -- \"2.2: loadHistorial()<br/>2.4: saveHistorial(reportes)\" --> SR\n    RC -- \"2.3 [nuevo]: crearRegistro(...)\" --> HS\n    HS -- \"2.3.1: generarSiguienteId()\" --> HS\n    RC -- \"2.5: onHistorialChanged() → render()\" --> HC\n```\n\n| # | Mensaje | Propósito |\n| :---: | :--- | :--- |\n| 1–1.2 | `saveState()`, `getActivePatientData()` | Guardar y obtener los datos actuales del paciente |\n| 1.3 | `onGenerarReporte(paciente)` | La calculadora avisa a `Main` (no conoce al ReporteController) |\n| 1.3.1–1.3.2 | `getActiveUser()`, `open()` | Obtener al firmante y abrir el modal |\n| 1.3.2.1–1.3.2.3 | Filtrar infusiones activas, dibujar ficha, verificar permiso | Armar la ficha |\n| 2.1–2.4 | Verificar permiso, leer historial, crear snapshot con folio y guardar | CU14 |\n| 2.5 | `onHistorialChanged()` | Actualizar la vista de historial |\n\n---\n\n## DC-3 · CU18 Agendar cita (incluye CU22)\n\n```mermaid\nflowchart TB\n    classDef actor fill:#fde68a,stroke:#b45309,color:#78350f;\n    classDef obj fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a;\n    classDef data fill:#fef9c3,stroke:#ca8a04,color:#713f12;\n\n    U[\"👤 Médico / Residente / Recepción\"]:::actor\n    CI[\":CitasController\"]:::obj\n    PS[\"PermisosService\"]:::obj\n    AG[\"AgendaService\"]:::obj\n    SR[\"StorageRepository\"]:::obj\n    LS[(\"localStorage\")]:::data\n    CV[\":CitasView\"]:::obj\n\n    U -- \"1: Nueva Cita<br/>2: Agendar Cita (datos)\" --> CI\n    CI -- \"2.1: puede(CITA_AGENDAR)\" --> PS\n    CI -- \"2.2: leerFormulario()<br/>2.9: closeForm()<br/>2.10: render()\" --> CI\n    CI -- \"2.3: validarCita(datos)<br/>2.5 [completa]: buscarEmpalme(citas, datos)<br/>2.7 [libre]: generarSiguienteId(citas)<br/>2.10.2: filtrarCitas(citas, filtro)\" --> AG\n    CI -- \"2.8 [libre]: saveCitas(citas)<br/>2.10.1: loadCitas()\" --> SR\n    SR -- \"2.8.1: setItem(citas)<br/>2.10.1.1: getItem(citas)\" --> LS\n    CI -- \"2.10.3: renderCitasListHtml(citas, permisos)\" --> CV\n    CI -- \"2.4 [incompleta]: aviso de campos<br/>2.6 [ocupado]: aviso de horario\" --> U\n```\n\n| # | Mensaje | Propósito |\n| :---: | :--- | :--- |\n| 2.1 | `puede(CITA_AGENDAR)` | Control de acceso por rol |\n| 2.2 | `leerFormulario()` | Tomar los datos capturados |\n| 2.3 | `validarCita()` | Campos obligatorios |\n| 2.4 | aviso `[incompleta]` | Si falta un dato termina aquí |\n| 2.5 | `buscarEmpalme()` | **CU22**: no empalme por profesional, fecha y hora |\n| 2.6 | aviso `[ocupado]` | Si el horario está ocupado termina aquí |\n| 2.7–2.8 | `generarSiguienteId()`, `saveCitas()` | Alta de la cita como PROGRAMADA |\n| 2.9–2.10.3 | Cerrar formulario y redibujar la agenda | Mostrar la cita nueva |\n\n---\n\n## Diferencia entre secuencia y colaboración\n\n| Diagrama de secuencia | Diagrama de colaboración |\n| :--- | :--- |\n| Enfatiza el **orden en el tiempo** (eje vertical) | Enfatiza la **estructura**: qué objetos están enlazados |\n| Muestra activaciones y fragmentos `alt/opt/loop` | Muestra condiciones `[ ]` y numeración anidada |\n| Útil para ver el flujo completo de un caso de uso | Útil para ver el acoplamiento entre objetos |\n";
+  const renderer = new marked.Renderer();
+  const codeOriginal = renderer.code.bind(renderer);
+  renderer.code = function (code, lang) {
+    if (lang === 'mermaid') {
+      const esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<pre class="mermaid">' + esc + '</pre>';
+    }
+    return codeOriginal(code, lang);
+  };
+  document.getElementById('contenido').innerHTML = marked.parse(fuente, { renderer, gfm: true });
+  mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true, htmlLabels: true } });
+  mermaid.run({ querySelector: 'pre.mermaid' }).then(() => { document.body.dataset.listo = '1'; })
+    .catch(err => { document.body.dataset.listo = 'error'; console.error(err); });
+</script>
+</body>
+</html>

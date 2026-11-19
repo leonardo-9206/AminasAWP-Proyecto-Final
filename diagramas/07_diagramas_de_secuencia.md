@@ -1,7 +1,7 @@
 # Diagramas de Secuencia — Aminas PWA
 
 > **Diseño Orientado a Objetos.** Seis diagramas de secuencia (la rúbrica pide mínimo 5) construidos con el código real del sistema final (rama `develop`, commit `585b050`).
-> Usan la **numeración de casos de uso** de [`02_casos_de_uso.md`](02_casos_de_uso.md) y las **clases y métodos** de [`03_diagramas_de_clases.md`](03_diagramas_de_clases.md).
+> Usan la **numeración de casos de uso** de [`04_casos_de_uso.md`](04_casos_de_uso.md) y las **clases y métodos** de [`05_diagramas_de_clases.md`](05_diagramas_de_clases.md).
 
 | # | Caso de uso | Módulo |
 | :---: | :--- | :--- |
