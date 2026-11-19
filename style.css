@@ -1823,3 +1823,131 @@ body.modal-open {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================================
+   AUTENTICACIÓN: PESTAÑAS, FORMULARIO Y CONTRASEÑA
+   ======================================================== */
+
+.modal-tab-bar {
+    display: flex;
+    background-color: #f1f5f9;
+    border-bottom: 1px solid var(--border-color);
+    padding: 6px 12px 0 12px;
+    gap: 8px;
+}
+
+.modal-nav-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.modal-nav-tab:hover {
+    color: var(--primary-color);
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-nav-tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: #ffffff;
+    font-weight: 700;
+}
+
+.auth-demo-hint {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: #475569;
+    font-size: 11px;
+    display: inline-block;
+}
+
+.auth-demo-hint strong {
+    color: var(--primary-color);
+}
+
+.profile-hint-row {
+    margin-top: 4px;
+}
+
+/* Prompt de Verificación de Contraseña */
+.auth-password-prompt {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 10px 0;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.password-user-preview {
+    text-align: center;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.preview-avatar {
+    font-size: 44px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.preview-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 4px 0;
+}
+
+.preview-role {
+    display: block;
+    font-size: 13px;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.preview-cedula {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.password-input {
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.password-hint-box {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 14px 0 20px 0;
+    font-size: 12px;
+    color: #166534;
+    text-align: center;
+}
+
+.password-form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.alert-danger {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}

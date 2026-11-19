@@ -293,17 +293,97 @@
             <div class="modal-header">
                 <div class="modal-title-group">
                     <span class="modal-icon">👤</span>
-                    <h2>Selección de Perfil / Cambio de Turno</h2>
+                    <h2>Control de Acceso / Perfiles Hospitalarios</h2>
                 </div>
                 <button id="btn-auth-close" class="modal-close-btn" title="Cerrar ventana">✕</button>
             </div>
 
+            <!-- Pestañas de Cambio de Turno vs Nuevo Doctor -->
+            <div class="modal-tab-bar">
+                <button type="button" class="modal-nav-tab active" id="auth-tab-profiles">
+                    👥 Profesionales y Turnos
+                </button>
+                <button type="button" class="modal-nav-tab" id="auth-tab-register">
+                    ➕ Registrar Nuevo Doctor/a
+                </button>
+            </div>
+
             <div class="modal-body">
-                <p class="modal-lead-text">
-                    Selecciona el profesional de salud activo para registrar prescripciones, citas y firmar los reportes de entrega de turno.
-                </p>
-                <div class="profiles-grid" id="profiles-grid">
-                    <!-- Se inyectan dinámicamente las tarjetas de profesionales -->
+                <!-- SECCIÓN 1: LISTADO DE PERFILES PARA CAMBIO DE TURNO -->
+                <div id="auth-profiles-section">
+                    <p class="modal-lead-text">
+                        Selecciona tu perfil profesional para registrar recetas, agendar citas y firmar los reportes de entrega de guardia. <em>(Se te solicitará la contraseña de acceso al turno).</em>
+                    </p>
+                    <div class="profiles-grid" id="profiles-grid">
+                        <!-- Se inyectan dinámicamente las tarjetas de profesionales -->
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: FORMULARIO DE REGISTRO DE NUEVO PROFESIONAL -->
+                <div id="auth-register-section" style="display: none;">
+                    <p class="modal-lead-text">
+                        Ingresa los datos profesionales y credenciales para dar de alta un nuevo médico, especialista o enfermero/a en el sistema.
+                    </p>
+
+                    <div id="auth-register-alert" class="alert-box alert-warning" style="display: none;"></div>
+
+                    <form id="form-register-doctor" class="citas-form-grid">
+                        <div class="form-group form-group-full">
+                            <label for="reg-doc-nombre">Nombre y Apellidos del Profesional:</label>
+                            <input type="text" id="reg-doc-nombre" class="form-control" placeholder="Ej. Dr. Roberto Ramírez Silva" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-doc-cedula">Cédula Profesional:</label>
+                            <input type="text" id="reg-doc-cedula" class="form-control" placeholder="Ej. 12849302" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-doc-rol">Rol Hospitalario:</label>
+                            <select id="reg-doc-rol" class="form-control" required>
+                                <option value="MEDICO_PEDIATRA">Médico Pediatra Especialista</option>
+                                <option value="ENFERMERO_A">Enfermero/a Especialista UCIP</option>
+                                <option value="RESIDENTE">Médico Residente de Pediatría</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-doc-especialidad">Especialidad o Servicio:</label>
+                            <input type="text" id="reg-doc-especialidad" class="form-control" placeholder="Ej. Cuidados Intensivos Pediátricos" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-doc-turno">Turno Asignado:</label>
+                            <select id="reg-doc-turno" class="form-control" required>
+                                <option value="Matutino">Turno Matutino (07:00 - 15:00)</option>
+                                <option value="Vespertino">Turno Vespertino (14:00 - 21:30)</option>
+                                <option value="Nocturno A">Turno Nocturno A</option>
+                                <option value="Nocturno B">Turno Nocturno B</option>
+                                <option value="Jornada Acumulada">Jornada Acumulada / Fines de Semana</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-doc-password">Contraseña de Acceso:</label>
+                            <input type="password" id="reg-doc-password" class="form-control" placeholder="Mínimo 3 caracteres" required autocomplete="new-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-doc-confirm-password">Confirmar Contraseña:</label>
+                            <input type="password" id="reg-doc-confirm-password" class="form-control" placeholder="Repite la contraseña" required autocomplete="new-password">
+                        </div>
+
+                        <div class="form-group-actions">
+                            <button type="submit" class="btn btn-primary" id="btn-submit-new-doctor">
+                                💾 Registrar e Iniciar Turno
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SECCIÓN 3: VERIFICACIÓN DE CONTRASEÑA -->
+                <div id="auth-password-section" style="display: none;">
+                    <!-- Se inyecta dinámicamente el prompt de contraseña -->
                 </div>
             </div>
 

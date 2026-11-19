@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
     PWA_DATA: 'aminas_pwa_data',
     CITAS_DATA: 'aminas_citas_data',
     AUTH_DATA: 'aminas_auth_data',
+    USUARIOS_DATA: 'aminas_usuarios_data',
     HISTORIAL_DATA: 'aminas_historial_data'
 };
 
@@ -167,5 +168,39 @@ export class StorageRepository {
      */
     static setActiveUser(user) {
         localStorage.setItem(STORAGE_KEYS.AUTH_DATA, JSON.stringify(user));
+    }
+
+    /**
+     * Carga la lista de usuarios/profesionales registrados.
+     * @param {Array} defaultUsers - Lista por defecto si no hay datos guardados.
+     * @returns {Array} usuarios
+     */
+    static loadUsuarios(defaultUsers = []) {
+        const saved = localStorage.getItem(STORAGE_KEYS.USUARIOS_DATA);
+        if (!saved) {
+            this.saveUsuarios(defaultUsers);
+            return defaultUsers;
+        }
+        try {
+            const parsed = JSON.parse(saved);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultUsers;
+        } catch (e) {
+            console.error('[StorageRepository] Error al cargar lista de usuarios:', e);
+            return defaultUsers;
+        }
+    }
+
+    /**
+     * Guarda la lista de usuarios/profesionales.
+     * @param {Array} usuarios
+     */
+    static saveUsuarios(usuarios) {
+        try {
+            localStorage.setItem(STORAGE_KEYS.USUARIOS_DATA, JSON.stringify(usuarios));
+            return true;
+        } catch (e) {
+            console.error('[StorageRepository] Error al guardar lista de usuarios:', e);
+            return false;
+        }
     }
 }

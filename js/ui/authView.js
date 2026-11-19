@@ -1,7 +1,8 @@
 // js/ui/authView.js
 /**
  * Componente de Vista de Autenticación y Perfiles de Usuario (Capa de Presentación / UI).
- * Genera el marcado para la barra de usuario en cabecera y el modal de cambio de turno/perfil.
+ * Genera el marcado para la barra de usuario, lista de perfiles, confirmación de contraseña
+ * y formulario de registro de nuevos doctores.
  */
 
 /**
@@ -11,7 +12,7 @@ export function renderUserPillHtml(user) {
     if (!user) return '';
 
     return `
-        <button type="button" class="user-pill-btn" id="btn-open-auth-modal" title="Toca para cambiar de profesional o turno">
+        <button type="button" class="user-pill-btn" id="btn-open-auth-modal" title="Toca para cambiar de turno o registrar nuevo doctor">
             <span class="user-pill-avatar">${user.avatar || '👤'}</span>
             <div class="user-pill-text">
                 <span class="user-pill-name">${user.nombre}</span>
@@ -23,11 +24,12 @@ export function renderUserPillHtml(user) {
 }
 
 /**
- * Genera el listado de tarjetas de profesionales en el modal de autenticación / perfil.
+ * Genera el listado de tarjetas de profesionales en el modal de autenticación.
  */
 export function renderProfilesListHtml(usuarios, activeUserId) {
     return usuarios.map(u => {
         const isActive = u.id === activeUserId;
+        const demoHint = u.password ? `<small class="auth-demo-hint">🔑 Contraseña: <strong>${u.password}</strong></small>` : '';
 
         return `
             <div class="profile-card ${isActive ? 'is-active-profile' : ''}" data-user-id="${u.id}">
@@ -50,17 +52,58 @@ export function renderProfilesListHtml(usuarios, activeUserId) {
                         <span class="info-val">${u.especialidad}</span>
                     </div>
                     <div class="profile-info-row">
-                        <span class="info-lbl">Horario Habitual:</span>
+                        <span class="info-lbl">Turno Habitual:</span>
                         <span class="info-val">${u.turno}</span>
+                    </div>
+                    <div class="profile-info-row profile-hint-row">
+                        ${demoHint}
                     </div>
                 </div>
 
                 <div class="profile-card-footer">
                     <button type="button" class="btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'} btn-select-profile" data-user-id="${u.id}">
-                        ${isActive ? '✓ Sesión Actual' : 'Iniciar Turno Aquí ➔'}
+                        ${isActive ? '✓ Sesión Actual' : 'Ingresar Contraseña ➔'}
                     </button>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+/**
+ * Genera la vista de solicitud de contraseña para iniciar turno con el usuario seleccionado.
+ */
+export function renderPasswordPromptHtml(targetUser) {
+    return `
+        <div class="auth-password-prompt">
+            <div class="password-user-preview">
+                <span class="preview-avatar">${targetUser.avatar}</span>
+                <h3 class="preview-name">${targetUser.nombre}</h3>
+                <span class="preview-role">${targetUser.rolLabel}</span>
+                <span class="preview-cedula">Cédula Profesional: <strong>${targetUser.cedula}</strong></span>
+            </div>
+
+            <div id="auth-password-alert" class="alert-box alert-danger" style="display: none;"></div>
+
+            <form id="form-auth-password" class="password-form">
+                <div class="form-group">
+                    <label for="auth-password-input">Contraseña de Acceso:</label>
+                    <input type="password" id="auth-password-input" class="form-control password-input" placeholder="Ingresa tu contraseña" required autofocus autocomplete="current-password">
+                </div>
+
+                <div class="password-hint-box">
+                    <span>💡 <strong>Nota del Sistema:</strong> Si estás usando una cuenta demo, la contraseña es <code>${targetUser.password || '1234'}</code></span>
+                </div>
+
+                <div class="password-form-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-password-prompt">
+                        ← Volver a la Lista
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-password">
+                        🔑 Validar e Iniciar Turno
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
 }
