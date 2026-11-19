@@ -15,7 +15,7 @@ Profesor: Dr. César Eduardo Velázquez Amador.
 
 ## 📄 Documento final de entrega
 
-**[Proyecto_Final_Aminas_PWA.pdf](Proyecto_Final_Aminas_PWA.pdf)** — documento completo (128 páginas) con portada, índice y todos los entregables **en el orden de la rúbrica**:
+**[Proyecto_Final_Aminas_PWA.pdf](Proyecto_Final_Aminas_PWA.pdf)** — documento completo (122 páginas) con portada, índice y todos los entregables **en el orden de la rúbrica**:
 
 | Parte | Secciones |
 | :--- | :--- |
