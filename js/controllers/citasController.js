@@ -27,9 +27,10 @@ export class CitasController {
      * @param {Function} options.onNavigateToDashboard
      * @param {Function} options.onNavigateToCalculadora - Callback (recibe patientId)
      */
-    constructor({ onNavigateToDashboard, onNavigateToCalculadora } = {}) {
+    constructor({ onNavigateToDashboard, onNavigateToCalculadora, onNavigateToHistorial } = {}) {
         this.onNavigateToDashboard = onNavigateToDashboard || null;
         this.onNavigateToCalculadora = onNavigateToCalculadora || null;
+        this.onNavigateToHistorial = onNavigateToHistorial || null;
 
         // Elementos de Interfaz
         this.container = document.getElementById('view-citas');
@@ -65,6 +66,7 @@ export class CitasController {
         // Navegación
         this.btnBackDashboard = document.getElementById('btn-citas-back-dashboard');
         this.btnGoCalc = document.getElementById('btn-citas-go-calc');
+        this.btnGoHistorial = document.getElementById('btn-citas-go-historial');
 
         this.citas = [];
         this.filtroEstadoActual = 'TODOS';
@@ -212,6 +214,14 @@ export class CitasController {
             this.btnGoCalc.addEventListener('click', () => {
                 if (typeof this.onNavigateToCalculadora === 'function') {
                     this.onNavigateToCalculadora();
+                }
+            });
+        }
+
+        if (this.btnGoHistorial) {
+            this.btnGoHistorial.addEventListener('click', () => {
+                if (typeof this.onNavigateToHistorial === 'function') {
+                    this.onNavigateToHistorial();
                 }
             });
         }

@@ -198,7 +198,7 @@ export class ReporteController {
             if (this.btnSaveHistorial) {
                 this.btnSaveHistorial.innerHTML = '<span class="btn-icon">💾</span> Actualizar Observaciones';
             }
-            this.showToast(`✅ Reporte guardado en el historial con folio #${registro.id}.`, true);
+            this.showToast(`✅ Reporte guardado con Folio #${registro.id}. Consúltalo en "🗂️ Historial Clínico".`, true);
         }
 
         if (typeof this.onHistorialChanged === 'function') {

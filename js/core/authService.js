@@ -1,10 +1,12 @@
 // js/core/authService.js
 /**
  * Servicio de Lógica de Negocio de Autenticación y Perfiles de Usuario (Capa de Dominio).
- * Modela los roles hospitalarios (`MEDICO_PEDIATRA`, `ENFERMERO_A`, `RESIDENTE`, `RECEPCION`), contraseñas y firma digital.
+ * Modela los roles hospitalarios (`ADMIN`, `MEDICO_PEDIATRA`, `ENFERMERO_A`, `RESIDENTE`, `RECEPCION`),
+ * contraseñas y firma digital.
  */
 
 export const ROLES_HOSPITALARIOS = {
+    ADMIN: 'ADMIN',
     MEDICO_PEDIATRA: 'MEDICO_PEDIATRA',
     ENFERMERO_A: 'ENFERMERO_A',
     RESIDENTE: 'RESIDENTE',
@@ -12,14 +14,16 @@ export const ROLES_HOSPITALARIOS = {
 };
 
 export const ROLES_LABELS = {
+    ADMIN: 'Administrador del Sistema',
     MEDICO_PEDIATRA: 'Médico Pediatra Especialista',
     ENFERMERO_A: 'Enfermero/a Especialista',
     RESIDENTE: 'Médico Residente de Pediatría',
-    RECEPCION: 'Administrador / Recepción'
+    RECEPCION: 'Recepción / Admisión'
 };
 
 /** Avatar por defecto según el rol. */
 export const ROLES_AVATAR = {
+    ADMIN: '🛡️',
     MEDICO_PEDIATRA: '👨‍⚕️',
     ENFERMERO_A: '👩‍⚕️',
     RESIDENTE: '🩺',
@@ -76,11 +80,22 @@ export const USUARIOS_PREDEFINIDOS = [
         nombre: 'Lic. Mariana Torres',
         cedula: '5521874',
         rol: ROLES_HOSPITALARIOS.RECEPCION,
-        rolLabel: 'Administrador / Recepción',
+        rolLabel: 'Recepción / Admisión',
         especialidad: 'Control de Agenda y Admisión Pediátrica',
         avatar: '📋',
         turno: 'Matutino',
         password: '1234'
+    },
+    {
+        id: 6,
+        nombre: 'Administrador del Sistema',
+        cedula: 'ADMIN-001',
+        rol: ROLES_HOSPITALARIOS.ADMIN,
+        rolLabel: 'Administrador del Sistema',
+        especialidad: 'Gestión de Personal Médico y Control de Accesos',
+        avatar: '🛡️',
+        turno: 'Administración General',
+        password: 'admin123'
     }
 ];
 
@@ -117,7 +132,7 @@ export class AuthService {
         }
 
         if (!data.cedula || data.cedula.trim().length < 4) {
-            errores.push('La cédula profesional es obligatoria (mínimo 4 dígitos).');
+            errores.push('La cédula profesional es obligatoria (mínimo 4 caracteres).');
         } else {
             const cleanCedula = data.cedula.trim();
             const cedulaDuplicada = usuariosExistentes.some(u =>
@@ -198,7 +213,7 @@ export class AuthService {
 
     /**
      * Valida si un usuario puede darse de baja (operación de "Baja" del catálogo).
-     * Reglas: no se puede eliminar el usuario con sesión activa ni dejar el sistema sin un Médico Pediatra.
+     * Reglas: no se puede eliminar el usuario con sesión activa, ni el último Admin ni el último Médico Pediatra.
      */
     static validarBajaUsuario(usuarioId, usuarios = [], activeUserId = null) {
         const usuario = usuarios.find(u => u.id === usuarioId);
@@ -206,7 +221,13 @@ export class AuthService {
             return { valido: false, error: 'El profesional no existe.' };
         }
         if (usuarioId === activeUserId) {
-            return { valido: false, error: 'No puedes eliminar el perfil con el turno activo. Cambia de perfil primero.' };
+            return { valido: false, error: 'No puedes eliminar el perfil con la sesión activa.' };
+        }
+        if (usuario.rol === ROLES_HOSPITALARIOS.ADMIN) {
+            const adminsRestantes = usuarios.filter(u => u.rol === ROLES_HOSPITALARIOS.ADMIN && u.id !== usuarioId);
+            if (adminsRestantes.length === 0) {
+                return { valido: false, error: 'Debe existir al menos un Administrador en el sistema.' };
+            }
         }
         if (usuario.rol === ROLES_HOSPITALARIOS.MEDICO_PEDIATRA) {
             const medicosRestantes = usuarios.filter(u => u.rol === ROLES_HOSPITALARIOS.MEDICO_PEDIATRA && u.id !== usuarioId);

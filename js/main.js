@@ -1,8 +1,8 @@
 // js/main.js
 /**
  * Punto de entrada principal (Application Entry Point) - Aminas PWA.
- * Orquesta la navegación SPA entre el Dashboard, la Calculadora, la Agenda de Citas
- * y el Historial de Reportes; aplica el control de acceso por rol al navegar
+ * Orquesta la navegación SPA entre Invitado (sin sesión), Dashboard, Calculadora,
+ * Agenda de Citas e Historial Clínico; aplica el control de acceso por rol al navegar
  * e inicializa el registro del Service Worker.
  */
 
@@ -17,21 +17,28 @@ import { StorageRepository } from './data/storageRepository.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const views = {
+        guest: document.getElementById('view-guest'),
         dashboard: document.getElementById('view-dashboard'),
         calculadora: document.getElementById('view-calculadora'),
         citas: document.getElementById('view-citas'),
         historial: document.getElementById('view-historial')
     };
-    let currentView = 'dashboard';
+    let currentView = 'guest';
 
     // Inicializar controlador de Autenticación y Perfiles
     const authCtrl = new AuthController({
-        onUserChanged: () => {
-            // Al cambiar de turno se re-aplican los permisos en todas las vistas
+        onUserChanged: (user) => {
+            if (!user) {
+                showView('guest');
+                return;
+            }
+            // Al iniciar sesión o cambiar de turno se re-aplican los permisos en todas las vistas
             calculadoraCtrl.applyPermissions();
             citasCtrl.render();
             historialCtrl.render();
-            if (currentView === 'calculadora' && !puedeUsarCalculadora()) {
+            if (currentView === 'guest') {
+                showView('dashboard');
+            } else if (currentView === 'calculadora' && !puedeUsarCalculadora()) {
                 showView('dashboard');
             } else {
                 dashboardCtrl.render();
@@ -39,6 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     authCtrl.init();
+
+    // Botón principal de la pantalla de invitado
+    const btnGuestLogin = document.getElementById('btn-guest-login');
+    if (btnGuestLogin) {
+        btnGuestLogin.addEventListener('click', () => authCtrl.open());
+    }
 
     // Inicializar controlador de Reporte y Entrega de Guardia
     const reporteCtrl = new ReporteController({
@@ -72,12 +85,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 calculadoraCtrl.openPatient(patientId);
             }
             showView('calculadora');
-        }
+        },
+        onNavigateToHistorial: () => showView('historial')
     });
 
-    // Inicializar controlador del Historial de Reportes
+    // Inicializar controlador del Historial Clínico
     const historialCtrl = new HistorialController({
         onNavigateToDashboard: () => showView('dashboard'),
+        onNavigateToCalculadora: (patientId) => {
+            if (!puedeUsarCalculadora(true)) return;
+            if (patientId) {
+                calculadoraCtrl.openPatient(patientId);
+            }
+            showView('calculadora');
+        },
         onOpenReporte: (registro) => reporteCtrl.openFromHistorial(registro)
     });
 
@@ -87,7 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
         onGenerarReporte: (patient) => {
             reporteCtrl.open(patient, authCtrl.getActiveUser());
         },
-        onNavigateToCitas: () => showView('citas')
+        onNavigateToCitas: () => showView('citas'),
+        onNavigateToHistorial: () => showView('historial')
     });
 
     // Inicializar Dashboard, Citas e Historial
@@ -105,9 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return permitido;
     }
 
-    // Función para cambiar de vista
+    // Función para cambiar de vista (bloquea vistas clínicas si no hay sesión activa)
     function showView(viewName) {
-        if (viewName === 'calculadora' && !puedeUsarCalculadora(true)) {
+        const usuarioActivo = StorageRepository.getActiveUser();
+        if (!usuarioActivo) {
+            viewName = 'guest';
+        } else if (viewName === 'guest') {
+            viewName = 'dashboard';
+        } else if (viewName === 'calculadora' && !puedeUsarCalculadora(true)) {
             viewName = 'dashboard';
         }
 
@@ -115,9 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (v) v.style.display = 'none';
         });
 
-        const target = views[viewName] || views.dashboard;
+        const target = views[viewName] || views.guest;
         if (target) target.style.display = 'block';
-        currentView = views[viewName] ? viewName : 'dashboard';
+        currentView = views[viewName] ? viewName : 'guest';
 
         if (currentView === 'citas') {
             citasCtrl.render();
@@ -125,14 +152,14 @@ document.addEventListener('DOMContentLoaded', () => {
             historialCtrl.render();
         } else if (currentView === 'calculadora') {
             calculadoraCtrl.applyPermissions();
-        } else {
+        } else if (currentView === 'dashboard') {
             dashboardCtrl.render();
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Iniciar por defecto en el Dashboard
-    showView('dashboard');
+    // Iniciar según estado de sesión: sin sesión -> Invitado; con sesión -> Dashboard
+    showView(StorageRepository.getActiveUser() ? 'dashboard' : 'guest');
 
     // Registro seguro de Service Worker para capacidades Offline PWA
     if ('serviceWorker' in navigator) {

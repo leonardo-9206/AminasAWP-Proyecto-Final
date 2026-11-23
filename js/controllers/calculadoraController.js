@@ -12,6 +12,7 @@ import {
     calculateEquivalenceBySpeed
 } from '../core/calculoFisiologico.js';
 import { PermisosService, ACCIONES } from '../core/permisosService.js';
+import { HistorialService } from '../core/historialService.js';
 import { StorageRepository } from '../data/storageRepository.js';
 
 export class CalculadoraController {
@@ -25,17 +26,20 @@ export class CalculadoraController {
         this.btnDeletePatient = document.getElementById('btn-delete-patient');
         this.btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
         this.btnCalcGoCitas = document.getElementById('btn-calc-go-citas');
+        this.btnCalcGoHistorial = document.getElementById('btn-calc-go-historial');
 
         this.appState = StorageRepository.loadAppState(defaultMeds);
         this.onBackToDashboard = null;
         this.onGenerarReporte = null;
         this.onNavigateToCitas = null;
+        this.onNavigateToHistorial = null;
     }
 
     init(options = {}) {
         this.onBackToDashboard = options.onBackToDashboard || null;
         this.onGenerarReporte = options.onGenerarReporte || null;
         this.onNavigateToCitas = options.onNavigateToCitas || null;
+        this.onNavigateToHistorial = options.onNavigateToHistorial || null;
         this.setupGlobalEventListeners();
         this.renderTabs();
         this.renderActivePatient();
@@ -74,6 +78,15 @@ export class CalculadoraController {
                 this.saveState();
                 if (typeof this.onNavigateToCitas === 'function') {
                     this.onNavigateToCitas();
+                }
+            });
+        }
+
+        if (this.btnCalcGoHistorial) {
+            this.btnCalcGoHistorial.addEventListener('click', () => {
+                this.saveState();
+                if (typeof this.onNavigateToHistorial === 'function') {
+                    this.onNavigateToHistorial();
                 }
             });
         }
@@ -160,6 +173,11 @@ export class CalculadoraController {
         });
 
         StorageRepository.saveAppState(this.appState);
+
+        // Actualizar registro permanente en el historial de pacientes consultados
+        const archivo = StorageRepository.loadPacientesHistorial();
+        const actualizado = HistorialService.registrarEnArchivo(archivo, activePatient, 'ACTIVO');
+        StorageRepository.savePacientesHistorial(actualizado);
     }
 
     renderTabs() {
@@ -234,6 +252,12 @@ export class CalculadoraController {
             return;
         }
         if (confirm(`¿Eliminar a ${this.currentPatientName.innerText}?`)) {
+            const eliminado = this.appState.patients.find(p => p.id === this.appState.activePatientId);
+            if (eliminado) {
+                const archivo = StorageRepository.loadPacientesHistorial();
+                const actualizado = HistorialService.registrarEnArchivo(archivo, eliminado, 'DADO_DE_BAJA');
+                StorageRepository.savePacientesHistorial(actualizado);
+            }
             this.appState.patients = this.appState.patients.filter(p => p.id !== this.appState.activePatientId);
             this.appState.activePatientId = this.appState.patients[0].id;
             // Se guarda directo: saveState() leería el DOM del paciente eliminado

@@ -1,18 +1,30 @@
 // js/ui/authView.js
 /**
  * Componente de Vista de Autenticación y Perfiles de Usuario (Capa de Presentación / UI).
- * Genera el marcado para la barra de usuario, lista de perfiles, confirmación de contraseña
- * y formulario de registro de nuevos doctores.
+ * Genera el marcado para la barra de usuario (invitado o autenticado), lista de perfiles,
+ * confirmación de contraseña (sin exponer claves) y controles de edición/baja por rol.
  */
 
 /**
- * Genera el HTML para el botón/píldora de usuario activo en la cabecera.
+ * Genera el HTML para el botón/píldora de usuario en la cabecera.
+ * Si no hay sesión activa muestra el estado de Invitado.
  */
 export function renderUserPillHtml(user) {
-    if (!user) return '';
+    if (!user) {
+        return `
+            <button type="button" class="user-pill-btn user-pill-guest" id="btn-open-auth-modal" title="Iniciar sesión con tu perfil profesional">
+                <span class="user-pill-avatar">🔒</span>
+                <div class="user-pill-text">
+                    <span class="user-pill-name">Invitado</span>
+                    <span class="user-pill-role">Iniciar Sesión</span>
+                </div>
+                <span class="user-pill-caret">▾</span>
+            </button>
+        `;
+    }
 
     return `
-        <button type="button" class="user-pill-btn" id="btn-open-auth-modal" title="Toca para cambiar de turno o registrar nuevo doctor">
+        <button type="button" class="user-pill-btn" id="btn-open-auth-modal" title="Cambiar de turno, editar tu perfil o cerrar sesión">
             <span class="user-pill-avatar">${user.avatar || '👤'}</span>
             <div class="user-pill-text">
                 <span class="user-pill-name">${user.nombre}</span>
@@ -25,13 +37,15 @@ export function renderUserPillHtml(user) {
 
 /**
  * Genera el listado de tarjetas de profesionales en el modal de autenticación.
+ * - No expone ninguna contraseña.
+ * - Solo ADMIN (`puedeGestionar = true`) puede editar/eliminar otros perfiles.
+ * - Cada profesional con sesión activa puede editar únicamente su propio perfil.
  */
-export function renderProfilesListHtml(usuarios, activeUserId, puedeGestionar = false) {
+export function renderProfilesListHtml(usuarios, activeUserId = null, puedeGestionar = false) {
     return usuarios.map(u => {
-        const isActive = u.id === activeUserId;
-        const puedeEditar = puedeGestionar || isActive;
-        const puedeEliminar = puedeGestionar && !isActive;
-        const demoHint = u.password ? `<small class="auth-demo-hint">🔑 Contraseña: <strong>${u.password}</strong></small>` : '';
+        const isActive = activeUserId !== null && u.id === activeUserId;
+        const puedeEditar = activeUserId !== null && (puedeGestionar || isActive);
+        const puedeEliminar = activeUserId !== null && puedeGestionar && !isActive;
 
         return `
             <div class="profile-card ${isActive ? 'is-active-profile' : ''}" data-user-id="${u.id}">
@@ -46,7 +60,7 @@ export function renderProfilesListHtml(usuarios, activeUserId, puedeGestionar = 
 
                 <div class="profile-card-body">
                     <div class="profile-info-row">
-                        <span class="info-lbl">Cédula Profesional:</span>
+                        <span class="info-lbl">Cédula / ID:</span>
                         <span class="info-val"><strong>${u.cedula}</strong></span>
                     </div>
                     <div class="profile-info-row">
@@ -57,15 +71,12 @@ export function renderProfilesListHtml(usuarios, activeUserId, puedeGestionar = 
                         <span class="info-lbl">Turno Habitual:</span>
                         <span class="info-val">${u.turno}</span>
                     </div>
-                    <div class="profile-info-row profile-hint-row">
-                        ${demoHint}
-                    </div>
                 </div>
 
                 <div class="profile-card-footer">
                     ${puedeEditar ? `
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-profile" data-user-id="${u.id}" title="Editar datos del profesional">
-                            ✏️ Editar
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-profile" data-user-id="${u.id}" title="${isActive ? 'Editar mis datos' : 'Editar datos del profesional'}">
+                            ✏️ ${isActive && !puedeGestionar ? 'Mis Datos' : 'Editar'}
                         </button>
                     ` : ''}
                     ${puedeEliminar ? `
@@ -74,7 +85,7 @@ export function renderProfilesListHtml(usuarios, activeUserId, puedeGestionar = 
                         </button>
                     ` : ''}
                     <button type="button" class="btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'} btn-select-profile" data-user-id="${u.id}">
-                        ${isActive ? '✓ Sesión Actual' : 'Ingresar Contraseña ➔'}
+                        ${isActive ? '✓ Sesión Actual' : 'Iniciar Sesión ➔'}
                     </button>
                 </div>
             </div>
@@ -83,7 +94,8 @@ export function renderProfilesListHtml(usuarios, activeUserId, puedeGestionar = 
 }
 
 /**
- * Genera la vista de solicitud de contraseña para iniciar turno con el usuario seleccionado.
+ * Genera la vista de solicitud de contraseña para iniciar sesión / turno con el usuario seleccionado.
+ * No muestra ni expone ninguna pista de contraseña.
  */
 export function renderPasswordPromptHtml(targetUser) {
     return `
@@ -92,7 +104,7 @@ export function renderPasswordPromptHtml(targetUser) {
                 <span class="preview-avatar">${targetUser.avatar}</span>
                 <h3 class="preview-name">${targetUser.nombre}</h3>
                 <span class="preview-role">${targetUser.rolLabel}</span>
-                <span class="preview-cedula">Cédula Profesional: <strong>${targetUser.cedula}</strong></span>
+                <span class="preview-cedula">Cédula / ID: <strong>${targetUser.cedula}</strong></span>
             </div>
 
             <div id="auth-password-alert" class="alert-box alert-danger" style="display: none;"></div>
@@ -103,16 +115,12 @@ export function renderPasswordPromptHtml(targetUser) {
                     <input type="password" id="auth-password-input" class="form-control password-input" placeholder="Ingresa tu contraseña" required autofocus autocomplete="current-password">
                 </div>
 
-                <div class="password-hint-box">
-                    <span>💡 <strong>Nota del Sistema:</strong> Si estás usando una cuenta demo, la contraseña es <code>${targetUser.password || '1234'}</code></span>
-                </div>
-
-                <div class="password-form-actions">
+                <div class="password-form-actions" style="margin-top: 20px;">
                     <button type="button" class="btn btn-secondary" id="btn-cancel-password-prompt">
                         ← Volver a la Lista
                     </button>
                     <button type="submit" class="btn btn-primary" id="btn-submit-password">
-                        🔑 Validar e Iniciar Turno
+                        🔑 Validar e Iniciar Sesión
                     </button>
                 </div>
             </form>

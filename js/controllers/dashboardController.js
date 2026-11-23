@@ -31,8 +31,6 @@ export class DashboardController {
         this.btnNewPatient = document.getElementById('btn-dash-new-patient');
         this.btnContinue = document.getElementById('btn-dash-continue');
         this.btnGoCitas = document.getElementById('btn-dash-go-citas');
-        this.offlineBadge = document.getElementById('offline-badge');
-        this.calcOfflineBadge = document.getElementById('calc-offline-badge');
 
         this.onSelectPatient = onSelectPatient;
         this.onNewPatient = onNewPatient;
@@ -43,8 +41,6 @@ export class DashboardController {
 
     init() {
         this.setupEventListeners();
-        this.setupNetworkStatusListeners();
-        this.updateNetworkStatus();
         this.render();
     }
 
@@ -91,27 +87,6 @@ export class DashboardController {
                     this.onSelectPatient(patientId);
                 }
             });
-        }
-    }
-
-    setupNetworkStatusListeners() {
-        window.addEventListener('online', () => this.updateNetworkStatus());
-        window.addEventListener('offline', () => this.updateNetworkStatus());
-    }
-
-    updateNetworkStatus() {
-        const isOnline = navigator.onLine;
-        const text = isOnline ? '🟢 Modo Offline Listo' : '🟡 Sin Conexión (Offline)';
-        const className = isOnline ? 'offline-badge' : 'offline-badge offline-badge-warning';
-
-        if (this.offlineBadge) {
-            this.offlineBadge.innerText = text;
-            this.offlineBadge.className = className;
-        }
-
-        if (this.calcOfflineBadge) {
-            this.calcOfflineBadge.innerText = text;
-            this.calcOfflineBadge.className = className;
         }
     }
 

@@ -10,7 +10,8 @@ export const STORAGE_KEYS = {
     CITAS_DATA: 'aminas_citas_data',
     AUTH_DATA: 'aminas_auth_data',
     USUARIOS_DATA: 'aminas_usuarios_data',
-    HISTORIAL_DATA: 'aminas_historial_data'
+    HISTORIAL_DATA: 'aminas_historial_data',
+    PACIENTES_HISTORIAL_DATA: 'aminas_pacientes_historial_data'
 };
 
 export class StorageRepository {
@@ -139,22 +140,12 @@ export class StorageRepository {
 
     /**
      * Obtiene el usuario/sesión activa.
+     * Si no hay sesión iniciada retorna null (modo invitado).
      */
     static getActiveUser() {
         const saved = localStorage.getItem(STORAGE_KEYS.AUTH_DATA);
         if (!saved) {
-            const defaultUser = {
-                id: 1,
-                nombre: 'Dr. Alejandro Morales',
-                cedula: '9845210',
-                rol: 'MEDICO_PEDIATRA',
-                rolLabel: 'Médico Pediatra Intensivista',
-                especialidad: 'Terapia Intensiva Pediátrica (UCIP)',
-                avatar: '👨‍⚕️',
-                turno: 'Matutino'
-            };
-            this.setActiveUser(defaultUser);
-            return defaultUser;
+            return null;
         }
         try {
             return JSON.parse(saved);
@@ -167,7 +158,18 @@ export class StorageRepository {
      * Guarda el usuario/sesión activa.
      */
     static setActiveUser(user) {
+        if (!user) {
+            this.clearActiveUser();
+            return;
+        }
         localStorage.setItem(STORAGE_KEYS.AUTH_DATA, JSON.stringify(user));
+    }
+
+    /**
+     * Cierra la sesión activa (vuelve a modo invitado).
+     */
+    static clearActiveUser() {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
     }
 
     /**
@@ -201,7 +203,38 @@ export class StorageRepository {
     }
 
     /**
+     * Carga el historial consolidado de pacientes consultados (activos y dados de baja).
+     * @returns {Array} pacientesHistorial
+     */
+    static loadPacientesHistorial() {
+        const saved = localStorage.getItem(STORAGE_KEYS.PACIENTES_HISTORIAL_DATA);
+        if (!saved) return [];
+        try {
+            const parsed = JSON.parse(saved);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.error('[StorageRepository] Error al cargar historial de pacientes:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Guarda el historial consolidado de pacientes consultados.
+     * @param {Array} lista
+     */
+    static savePacientesHistorial(lista) {
+        try {
+            localStorage.setItem(STORAGE_KEYS.PACIENTES_HISTORIAL_DATA, JSON.stringify(lista));
+            return true;
+        } catch (e) {
+            console.error('[StorageRepository] Error al guardar historial de pacientes:', e);
+            return false;
+        }
+    }
+
+    /**
      * Carga la lista de usuarios/profesionales registrados.
+     * Asegura que siempre exista el perfil Administrador si se carga un estado anterior.
      * @param {Array} defaultUsers - Lista por defecto si no hay datos guardados.
      * @returns {Array} usuarios
      */
@@ -213,7 +246,24 @@ export class StorageRepository {
         }
         try {
             const parsed = JSON.parse(saved);
-            return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultUsers;
+            if (!Array.isArray(parsed) || parsed.length === 0) {
+                this.saveUsuarios(defaultUsers);
+                return defaultUsers;
+            }
+            // Migración defensiva: inyectar usuario ADMIN si el catálogo guardado no tenía ninguno
+            const tieneAdmin = parsed.some(u => u.rol === 'ADMIN');
+            if (!tieneAdmin) {
+                const defaultAdmin = defaultUsers.find(u => u.rol === 'ADMIN');
+                if (defaultAdmin) {
+                    const maxId = parsed.reduce((m, u) => Math.max(m, parseInt(u.id, 10) || 0), 0);
+                    const adminConId = parsed.some(u => u.id === defaultAdmin.id)
+                        ? { ...defaultAdmin, id: maxId + 1 }
+                        : defaultAdmin;
+                    parsed.push(adminConId);
+                    this.saveUsuarios(parsed);
+                }
+            }
+            return parsed;
         } catch (e) {
             console.error('[StorageRepository] Error al cargar lista de usuarios:', e);
             return defaultUsers;

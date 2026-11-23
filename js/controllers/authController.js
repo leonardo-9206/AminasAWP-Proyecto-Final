@@ -1,7 +1,10 @@
 // js/controllers/authController.js
 /**
  * Controlador de Autenticación, Registro de Doctores y Perfiles Hospitalarios (Capa de Aplicación).
- * Gestiona el control de acceso, verificación de contraseñas por turno y alta de nuevos profesionales.
+ * - Soporta modo invitado (sin sesión activa).
+ * - Solo el rol ADMIN puede registrar, editar o eliminar otros profesionales.
+ * - Cada profesional puede editar únicamente sus propios datos dentro de su sesión.
+ * - Permite cerrar sesión para volver a modo invitado.
  */
 
 import { AuthService } from '../core/authService.js';
@@ -12,7 +15,7 @@ import { renderUserPillHtml, renderProfilesListHtml, renderPasswordPromptHtml } 
 export class AuthController {
     /**
      * @param {Object} options
-     * @param {Function} options.onUserChanged - Callback cuando se cambia el profesional activo
+     * @param {Function} options.onUserChanged - Callback cuando se cambia o cierra sesión (recibe user o null)
      */
     constructor({ onUserChanged } = {}) {
         this.onUserChanged = onUserChanged || null;
@@ -24,6 +27,7 @@ export class AuthController {
         this.modalAuth = document.getElementById('modal-auth');
         this.btnClose = document.getElementById('btn-auth-close');
         this.btnCancel = document.getElementById('btn-auth-cancel');
+        this.btnLogout = document.getElementById('btn-auth-logout');
 
         // Pestañas / Secciones del Modal
         this.tabProfilesBtn = document.getElementById('auth-tab-profiles');
@@ -33,7 +37,7 @@ export class AuthController {
         this.passwordSection = document.getElementById('auth-password-section');
         this.profilesGrid = document.getElementById('profiles-grid');
 
-        // Formulario de Registro de Nuevo Doctor
+        // Formulario de Registro / Edición de Profesional
         this.registerForm = document.getElementById('form-register-doctor');
         this.registerAlert = document.getElementById('auth-register-alert');
         this.registerLead = document.getElementById('auth-register-lead');
@@ -49,7 +53,7 @@ export class AuthController {
 
     init() {
         this.usuarios = StorageRepository.loadUsuarios(AuthService.getUsuariosPredefinidos());
-        this.activeUser = StorageRepository.getActiveUser() || this.usuarios[0];
+        this.activeUser = StorageRepository.getActiveUser(); // null si es invitado
 
         this.renderUserPill();
         this.setupEventListeners();
@@ -66,13 +70,17 @@ export class AuthController {
             });
         }
 
-        // Botones de cierre
+        // Botones de cierre y logout
         if (this.btnClose) {
             this.btnClose.addEventListener('click', () => this.close());
         }
 
         if (this.btnCancel) {
             this.btnCancel.addEventListener('click', () => this.close());
+        }
+
+        if (this.btnLogout) {
+            this.btnLogout.addEventListener('click', () => this.logout());
         }
 
         if (this.modalAuth) {
@@ -100,7 +108,7 @@ export class AuthController {
             });
         }
 
-        // Selección de tarjeta de perfil para cambiar de turno
+        // Selección de tarjeta de perfil para iniciar sesión, editar o eliminar
         if (this.profilesGrid) {
             this.profilesGrid.addEventListener('click', (e) => {
                 const btnEdit = e.target.closest('.btn-edit-profile');
@@ -125,7 +133,7 @@ export class AuthController {
             });
         }
 
-        // Formulario de Registro de Nuevo Doctor
+        // Formulario de Registro / Edición de Profesional
         if (this.registerForm) {
             this.registerForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -171,7 +179,11 @@ export class AuthController {
 
     open() {
         this.usuarios = StorageRepository.loadUsuarios(AuthService.getUsuariosPredefinidos());
-        this.activeUser = StorageRepository.getActiveUser() || this.usuarios[0];
+        this.activeUser = StorageRepository.getActiveUser();
+
+        if (this.btnLogout) {
+            this.btnLogout.style.display = this.activeUser ? 'inline-flex' : 'none';
+        }
 
         this.showView('list');
 
@@ -189,6 +201,20 @@ export class AuthController {
         this.pendingUser = null;
     }
 
+    logout() {
+        if (!this.activeUser) return;
+        if (!confirm(`¿Cerrar la sesión de ${this.activeUser.nombre}? Volverás al modo invitado.`)) return;
+
+        StorageRepository.clearActiveUser();
+        this.activeUser = null;
+        this.renderUserPill();
+        this.close();
+
+        if (typeof this.onUserChanged === 'function') {
+            this.onUserChanged(null);
+        }
+    }
+
     showView(viewName) {
         this.currentView = viewName;
 
@@ -199,13 +225,16 @@ export class AuthController {
         if (this.tabProfilesBtn) this.tabProfilesBtn.classList.remove('active');
         if (this.tabRegisterBtn) this.tabRegisterBtn.classList.remove('active');
 
-        // Cualquier cambio de vista sale del modo edición (openEditForm lo vuelve a activar)
+        // Cualquier cambio de vista sale del modo edición (handleEditProfile lo vuelve a activar)
         this.editingUserId = null;
         this.updateRegisterFormMode(null);
 
         if (viewName === 'register') {
             if (this.registerSection) this.registerSection.style.display = 'block';
-            if (this.tabRegisterBtn) this.tabRegisterBtn.classList.add('active');
+            if (this.tabRegisterBtn) {
+                this.tabRegisterBtn.style.display = '';
+                this.tabRegisterBtn.classList.add('active');
+            }
             if (this.registerForm) this.registerForm.reset();
             this.hideRegisterAlert();
         } else if (viewName === 'password') {
@@ -227,7 +256,8 @@ export class AuthController {
         if (this.tabRegisterBtn) {
             this.tabRegisterBtn.style.display = puedeGestionar ? '' : 'none';
         }
-        this.profilesGrid.innerHTML = renderProfilesListHtml(this.usuarios, this.activeUser ? this.activeUser.id : 1, puedeGestionar);
+        const activeId = this.activeUser ? this.activeUser.id : null;
+        this.profilesGrid.innerHTML = renderProfilesListHtml(this.usuarios, activeId, puedeGestionar);
     }
 
     // ------------------------------------------------------------------
@@ -237,19 +267,24 @@ export class AuthController {
     /** Ajusta textos del formulario según alta o edición. */
     updateRegisterFormMode(usuario) {
         const editando = !!usuario;
+        const esAdmin = PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR);
+
         if (this.registerLead) {
             this.registerLead.innerText = editando
                 ? `Modifica los datos de ${usuario.nombre}. Deja la contraseña vacía para conservar la actual.`
                 : 'Ingresa los datos profesionales y credenciales para dar de alta un nuevo médico, especialista o enfermero/a en el sistema.';
         }
         if (this.btnSubmitDoctor) {
-            this.btnSubmitDoctor.innerHTML = editando ? '💾 Guardar Cambios' : '💾 Registrar e Iniciar Turno';
+            this.btnSubmitDoctor.innerHTML = editando ? '💾 Guardar Cambios' : '💾 Registrar Profesional';
         }
         if (this.btnCancelEditDoctor) {
             this.btnCancelEditDoctor.style.display = editando ? 'inline-flex' : 'none';
         }
         if (this.tabRegisterBtn) {
-            this.tabRegisterBtn.innerHTML = editando ? '✏️ Editar Profesional' : '➕ Registrar Nuevo Doctor/a';
+            this.tabRegisterBtn.innerHTML = editando ? '✏️ Editar Perfil' : '➕ Registrar Nuevo Doctor/a';
+            if (!editando && !esAdmin) {
+                this.tabRegisterBtn.style.display = 'none';
+            }
         }
         const passInput = document.getElementById('reg-doc-password');
         const confirmInput = document.getElementById('reg-doc-confirm-password');
@@ -260,17 +295,18 @@ export class AuthController {
         });
         const rolSelect = document.getElementById('reg-doc-rol');
         if (rolSelect) {
-            // Un profesional sin permiso de gestión no puede cambiarse el rol a sí mismo
-            rolSelect.disabled = editando && !PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR);
+            // Un profesional sin permiso de ADMIN no puede cambiarse el rol a sí mismo
+            rolSelect.disabled = editando && !esAdmin;
         }
     }
 
     handleEditProfile(userId) {
         const usuario = this.usuarios.find(u => u.id === userId);
-        if (!usuario) return;
+        if (!usuario || !this.activeUser) return;
 
-        const esPropio = this.activeUser && this.activeUser.id === userId;
-        if (!esPropio && !PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR)) {
+        const esPropio = this.activeUser.id === userId;
+        const esAdmin = PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR);
+        if (!esPropio && !esAdmin) {
             alert(PermisosService.mensajeDenegado(this.activeUser));
             return;
         }
@@ -294,9 +330,21 @@ export class AuthController {
 
     handleUpdateDoctor() {
         const usuario = this.usuarios.find(u => u.id === this.editingUserId);
-        if (!usuario) return;
+        if (!usuario || !this.activeUser) return;
+
+        const esPropio = this.activeUser.id === usuario.id;
+        const esAdmin = PermisosService.puede(this.activeUser, ACCIONES.USUARIO_GESTIONAR);
+        if (!esPropio && !esAdmin) {
+            this.showRegisterAlert(PermisosService.mensajeDenegado(this.activeUser));
+            return;
+        }
 
         const formData = this.leerFormularioDoctor();
+        // Si no es admin, forzar a conservar su rol actual
+        if (!esAdmin) {
+            formData.rol = usuario.rol;
+        }
+
         const validacion = AuthService.validarNuevoUsuario(formData, this.usuarios, {
             excluirId: usuario.id,
             passwordOpcional: true
@@ -310,7 +358,7 @@ export class AuthController {
         this.usuarios = this.usuarios.map(u => (u.id === actualizado.id ? actualizado : u));
         StorageRepository.saveUsuarios(this.usuarios);
 
-        // Si se editó el perfil con turno activo, se refresca la sesión
+        // Si se editó el perfil con sesión activa, se refresca la sesión
         if (this.activeUser && this.activeUser.id === actualizado.id) {
             this.switchActiveUser(actualizado);
         } else if (typeof this.onUserChanged === 'function') {
@@ -333,7 +381,7 @@ export class AuthController {
         }
 
         const usuario = this.usuarios.find(u => u.id === userId);
-        if (!confirm(`¿Dar de baja a ${usuario.nombre}? Ya no podrá iniciar turno en el sistema.`)) return;
+        if (!confirm(`¿Dar de baja a ${usuario.nombre}? Ya no podrá iniciar sesión en el sistema.`)) return;
 
         this.usuarios = this.usuarios.filter(u => u.id !== userId);
         StorageRepository.saveUsuarios(this.usuarios);
@@ -398,7 +446,7 @@ export class AuthController {
             return;
         }
 
-        // Contraseña correcta: Cambiar de usuario
+        // Contraseña correcta: Iniciar sesión / cambiar de usuario
         this.switchActiveUser(this.pendingUser);
         this.close();
     }
@@ -408,24 +456,8 @@ export class AuthController {
             this.showRegisterAlert(PermisosService.mensajeDenegado(this.activeUser));
             return;
         }
-        const nombreInput = document.getElementById('reg-doc-nombre');
-        const cedulaInput = document.getElementById('reg-doc-cedula');
-        const rolSelect = document.getElementById('reg-doc-rol');
-        const espInput = document.getElementById('reg-doc-especialidad');
-        const turnoSelect = document.getElementById('reg-doc-turno');
-        const passInput = document.getElementById('reg-doc-password');
-        const confirmPassInput = document.getElementById('reg-doc-confirm-password');
 
-        const formData = {
-            nombre: nombreInput ? nombreInput.value.trim() : '',
-            cedula: cedulaInput ? cedulaInput.value.trim() : '',
-            rol: rolSelect ? rolSelect.value : '',
-            especialidad: espInput ? espInput.value.trim() : '',
-            turno: turnoSelect ? turnoSelect.value : 'Matutino',
-            password: passInput ? passInput.value : '',
-            confirmPassword: confirmPassInput ? confirmPassInput.value : ''
-        };
-
+        const formData = this.leerFormularioDoctor();
         const validacion = AuthService.validarNuevoUsuario(formData, this.usuarios);
         if (!validacion.valido) {
             this.showRegisterAlert(validacion.errores.join(' '));
@@ -440,11 +472,8 @@ export class AuthController {
         this.usuarios.push(nuevoDoctor);
         StorageRepository.saveUsuarios(this.usuarios);
 
-        // Iniciar sesión directamente con el nuevo doctor registrado
-        this.switchActiveUser(nuevoDoctor);
-
-        alert(`✅ ¡Doctor/a registrado exitosamente!\n\nBienvenido/a, ${nuevoDoctor.nombre}.\nTu turno ha sido iniciado.`);
-        this.close();
+        alert(`✅ ¡Profesional registrado exitosamente!\n\n${nuevoDoctor.nombre} (${nuevoDoctor.rolLabel}) ya puede iniciar sesión con su contraseña.`);
+        this.showView('list');
     }
 
     switchActiveUser(user) {
@@ -460,7 +489,7 @@ export class AuthController {
 
     renderUserPill() {
         if (!this.userContainer) return;
-        this.activeUser = StorageRepository.getActiveUser() || this.usuarios[0];
+        this.activeUser = StorageRepository.getActiveUser();
         this.userContainer.innerHTML = renderUserPillHtml(this.activeUser);
     }
 

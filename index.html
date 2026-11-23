@@ -25,12 +25,28 @@
             </div>
         </header>
 
+        <!-- VISTA 0: PANTALLA DE INVITADO / ACCESO RESTRINGIDO -->
+        <section id="view-guest" class="app-view">
+            <div class="guest-gate-card">
+                <span class="guest-gate-icon">🔒</span>
+                <h1>Aminas PWA — Acceso Clínico</h1>
+                <p class="guest-gate-desc">
+                    Esta plataforma resguarda información pediátrica y dosificación de fármacos vasoactivos de uso exclusivo para personal de salud autorizado del hospital.
+                </p>
+                <p class="guest-gate-sub">
+                    Actualmente navegas como <strong>Invitado</strong>. Inicia sesión con tu perfil profesional para consultar pacientes, operar bombas de infusión, gestionar citas o revisar historiales.
+                </p>
+                <button type="button" id="btn-guest-login" class="btn btn-primary btn-guest-login">
+                    🔑 Iniciar Sesión con Perfil Hospitalario
+                </button>
+            </div>
+        </section>
+
         <!-- VISTA 1: DASHBOARD / BIENVENIDA -->
-        <section id="view-dashboard" class="app-view">
+        <section id="view-dashboard" class="app-view" style="display: none;">
             <header class="dashboard-header">
                 <div class="brand-title-wrap">
                     <h1>Aminas PWA</h1>
-                    <span class="offline-badge" id="offline-badge">🟢 Modo Offline Listo</span>
                 </div>
                 <p class="subtitle">Sistema Integral de Infusiones y Gestión Pediátrica</p>
             </header>
@@ -60,7 +76,7 @@
                         <span>📅</span> Agenda de Citas
                     </button>
                     <button id="btn-dash-go-historial" class="btn btn-outline-primary">
-                        <span>🗂️</span> Historial de Reportes
+                        <span>🗂️</span> Historial Clínico
                     </button>
                 </div>
             </div>
@@ -87,10 +103,12 @@
                     <button id="btn-calc-go-citas" class="btn btn-back">
                         📅 Agenda de Citas
                     </button>
+                    <button id="btn-calc-go-historial" class="btn btn-back">
+                        🗂️ Historial Clínico
+                    </button>
                 </div>
                 <div class="calc-nav-info">
                     <span class="calc-nav-title">Calculadora de Infusiones</span>
-                    <span class="offline-badge" id="calc-offline-badge">🟢 Modo Offline Listo</span>
                 </div>
             </div>
 
@@ -151,10 +169,12 @@
                     <button id="btn-citas-go-calc" class="btn btn-back">
                         💉 Calculadora de Bombas
                     </button>
+                    <button id="btn-citas-go-historial" class="btn btn-back">
+                        🗂️ Historial Clínico
+                    </button>
                 </div>
                 <div class="calc-nav-info">
                     <span class="calc-nav-title">Agenda de Citas y Seguimiento</span>
-                    <span class="offline-badge">🟢 Modo Offline Listo</span>
                 </div>
             </div>
 
@@ -261,7 +281,7 @@
             </div>
         </section>
 
-        <!-- VISTA 4: HISTORIAL DE REPORTES DE ENTREGA DE GUARDIA -->
+        <!-- VISTA 4: HISTORIAL CLÍNICO (REPORTES DE BOMBAS + PACIENTES CONSULTADOS) -->
         <section id="view-historial" class="app-view" style="display: none;">
             <div class="calc-nav-bar">
                 <div class="calc-nav-actions">
@@ -270,30 +290,46 @@
                     </button>
                 </div>
                 <div class="calc-nav-info">
-                    <span class="calc-nav-title">Historial de Entregas de Guardia</span>
-                    <span class="offline-badge">🟢 Modo Offline Listo</span>
+                    <span class="calc-nav-title">Historial Clínico y Bitácora</span>
                 </div>
             </div>
 
             <div class="citas-summary-bar">
                 <div class="summary-metric">
-                    <span class="metric-label">Reportes Guardados</span>
+                    <span class="metric-label">Reportes de Bombas</span>
                     <span class="metric-value" id="historial-count-total">0</span>
                 </div>
                 <div class="summary-metric">
                     <span class="metric-label">Emitidos Hoy</span>
                     <span class="metric-value text-primary" id="historial-count-hoy">0</span>
                 </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Pacientes Consultados</span>
+                    <span class="metric-value" id="historial-count-pacientes">0</span>
+                </div>
+            </div>
+
+            <div class="historial-tabs-bar">
+                <button type="button" class="modal-nav-tab active" id="historial-tab-reportes">
+                    📄 Reportes de Bombas / Guardia
+                </button>
+                <button type="button" class="modal-nav-tab" id="historial-tab-pacientes">
+                    👶 Historial de Pacientes Consultados
+                </button>
             </div>
 
             <div class="citas-filter-bar">
                 <div class="search-group">
-                    <input type="text" id="historial-search-input" class="form-control" placeholder="🔍 Buscar por paciente, profesional u observaciones...">
+                    <input type="text" id="historial-search-input" class="form-control" placeholder="🔍 Buscar por paciente, médico, motivo u observaciones...">
                 </div>
             </div>
 
             <div class="citas-grid" id="historial-container">
-                <!-- Se inyectan dinámicamente los reportes -->
+                <!-- Se inyectan dinámicamente los reportes de bombas -->
+            </div>
+
+            <div class="citas-grid" id="historial-pacientes-container" style="display: none;">
+                <!-- Se inyectan dinámicamente los expedientes de pacientes consultados -->
             </div>
         </section>
     </div>
@@ -389,7 +425,8 @@
                                 <option value="MEDICO_PEDIATRA">Médico Pediatra Especialista</option>
                                 <option value="ENFERMERO_A">Enfermero/a Especialista UCIP</option>
                                 <option value="RESIDENTE">Médico Residente de Pediatría</option>
-                                <option value="RECEPCION">Administrador / Recepción</option>
+                                <option value="RECEPCION">Recepción / Admisión</option>
+                                <option value="ADMIN">Administrador del Sistema</option>
                             </select>
                         </div>
 
@@ -436,7 +473,10 @@
                 </div>
             </div>
 
-            <div class="modal-footer">
+            <div class="modal-footer modal-footer-between">
+                <button id="btn-auth-logout" class="btn btn-outline-danger" style="display: none;">
+                    🚪 Cerrar Sesión
+                </button>
                 <button id="btn-auth-cancel" class="btn btn-secondary">
                     Cerrar
                 </button>
