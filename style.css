@@ -2263,3 +2263,195 @@ body.modal-open {
     padding: 8px 10px;
     font-size: 12px;
 }
+
+/* ========================================================
+   PULIDO RESPONSIVE MÓVIL INTEGRAL (MODALES, REPORTE, AUTH, HISTORIAL)
+   ======================================================== */
+@media screen and (max-width: 768px) {
+    /* Pantalla de Invitado */
+    .guest-gate-card {
+        margin: 16px auto;
+        padding: 24px 16px;
+    }
+
+    .guest-gate-card h1 {
+        font-size: 20px;
+    }
+
+    .btn-guest-login {
+        width: 100%;
+    }
+
+    /* Cabecera de paciente en calculadora: permitir salto de línea si el nombre es largo */
+    .patient-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .calc-nav-actions {
+        width: 100%;
+    }
+
+    .calc-nav-actions .btn-back {
+        flex: 1 1 auto;
+        justify-content: center;
+        font-size: 13px;
+        padding: 8px 10px;
+    }
+
+    /* Modales en pantalla pequeña */
+    .modal-overlay {
+        padding: 8px;
+        align-items: flex-start;
+    }
+
+    .modal-container {
+        max-height: 94vh;
+        margin-top: 8px;
+    }
+
+    .modal-header {
+        padding: 12px 14px;
+    }
+
+    .modal-title-group h2 {
+        font-size: 15px;
+    }
+
+    .modal-body {
+        padding: 14px;
+    }
+
+    .modal-footer {
+        padding: 12px 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .modal-tab-bar,
+    .historial-tabs-bar {
+        padding: 6px 8px 0 8px;
+        gap: 4px;
+    }
+
+    .modal-nav-tab {
+        flex: 1;
+        text-align: center;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+
+    /* Prompt de contraseña en móvil */
+    .password-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .password-form-actions .btn {
+        width: 100%;
+    }
+
+    /* Proteger la tabla del Reporte de Guardia de la regla global de tarjetas de la calculadora */
+    .report-ticket {
+        padding: 14px;
+    }
+
+    .report-ticket-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .report-meta {
+        text-align: left;
+    }
+
+    .report-patient-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 12px;
+        gap: 6px;
+    }
+
+    .report-table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 520px !important;
+        border-collapse: collapse !important;
+    }
+
+    .report-table thead {
+        display: table-header-group !important;
+    }
+
+    .report-table tbody {
+        display: table-row-group !important;
+    }
+
+    .report-table thead tr {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+    }
+
+    .report-table tr {
+        display: table-row !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .report-table th,
+    .report-table td {
+        display: table-cell !important;
+        width: auto !important;
+        padding: 8px !important;
+        text-align: left !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        vertical-align: middle !important;
+    }
+
+    .report-table td::before,
+    .report-table td:last-child::before {
+        display: none !important;
+        content: none !important;
+    }
+
+    .report-table td:last-child {
+        margin-top: 0 !important;
+        padding-left: 8px !important;
+        justify-content: initial !important;
+    }
+
+    /* Firmas apiladas limpiamente en móvil */
+    .report-ticket-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 18px;
+        margin-top: 16px;
+        padding-top: 14px;
+    }
+
+    /* Expediente de pacientes en móvil */
+    .expediente-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .exp-report-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .exp-report-row .btn {
+        width: 100%;
+    }
+}
