@@ -284,10 +284,18 @@ export class CitasController {
             pacienteNombre = selectedOpt ? selectedOpt.dataset.name : `Paciente ${pacienteId}`;
         }
 
+        const medicoTexto = this.medicoSelect.value.trim();
+        const usuarios = StorageRepository.loadUsuarios(AuthService.getUsuariosPredefinidos());
+        const medicoObj = usuarios.find(u =>
+            `${u.nombre} — ${u.especialidad}` === medicoTexto ||
+            medicoTexto.toLowerCase().includes((u.nombre || '').trim().toLowerCase())
+        );
+
         return {
             pacienteId,
             pacienteNombre,
-            medicoResponsable: this.medicoSelect.value.trim(),
+            medicoId: medicoObj ? medicoObj.id : null,
+            medicoResponsable: medicoTexto,
             fecha: this.fechaInput.value.trim(),
             hora: this.horaInput.value.trim(),
             motivo: this.motivoInput.value.trim(),
@@ -343,9 +351,11 @@ export class CitasController {
         } else {
             // ALTA: nueva cita
             const nuevoId = AgendaService.generarSiguienteId(this.citas);
+            const solicitante = this.getActiveUser();
             this.citas.unshift({
                 id: nuevoId,
                 ...citaData,
+                solicitadaPor: solicitante ? solicitante.nombre : null,
                 estado: ESTADOS_CITA.PROGRAMADA,
                 fechaRegistro: new Date().toISOString()
             });
@@ -402,14 +412,23 @@ export class CitasController {
     }
 
     handleChangeState(citaId, newState) {
+        const usuario = this.getActiveUser();
         const accion = newState === ESTADOS_CITA.CANCELADA ? ACCIONES.CITA_CANCELAR : ACCIONES.CITA_ATENDER;
         if (!this.puede(accion)) {
-            alert(PermisosService.mensajeDenegado(this.getActiveUser()));
+            alert(PermisosService.mensajeDenegado(usuario));
             return;
         }
 
         const cita = this.citas.find(c => c.id === citaId);
         if (!cita) return;
+
+        // Regla clínica: solo el médico asignado puede marcar la cita/interconsulta como "En Consulta" o "Completada"
+        if (newState === ESTADOS_CITA.EN_CURSO || newState === ESTADOS_CITA.COMPLETADA) {
+            if (!AgendaService.esMedicoAsignado(cita, usuario)) {
+                alert(`🔒 Solo el especialista asignado (${cita.medicoResponsable}) puede atender o concluir esta cita.`);
+                return;
+            }
+        }
 
         if (newState === ESTADOS_CITA.CANCELADA && !confirm(`¿Cancelar la cita de ${this.nombrePaciente(cita)}?`)) {
             return;
@@ -417,6 +436,9 @@ export class CitasController {
 
         cita.estado = newState;
         cita.fechaModificacion = new Date().toISOString();
+        if (newState === ESTADOS_CITA.COMPLETADA && usuario) {
+            cita.atendidaPor = usuario.nombre;
+        }
         StorageRepository.saveCitas(this.citas);
 
         if (this.editingCitaId === citaId) this.closeForm();
@@ -507,10 +529,12 @@ export class CitasController {
             busqueda: this.busquedaActual
         });
 
+        const usuarioActivo = this.getActiveUser();
         const permisos = {
             agendar: this.puede(ACCIONES.CITA_AGENDAR),
             atender: this.puede(ACCIONES.CITA_ATENDER),
-            cancelar: this.puede(ACCIONES.CITA_CANCELAR)
+            cancelar: this.puede(ACCIONES.CITA_CANCELAR),
+            usuarioActivo
         };
 
         if (this.citasListContainer) {

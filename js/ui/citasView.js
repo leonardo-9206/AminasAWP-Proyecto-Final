@@ -4,14 +4,16 @@
  * Genera el marcado HTML para la lista de citas, badges de estado y selectores.
  */
 
-import { ESTADOS_INFO, ESTADOS_CITA, MEDICOS_DISPONIBLES, MOTIVOS_SUGERIDOS } from '../core/agendaService.js';
+import { AgendaService, ESTADOS_INFO, ESTADOS_CITA, MEDICOS_DISPONIBLES, MOTIVOS_SUGERIDOS } from '../core/agendaService.js';
 
 /**
  * Genera el HTML de la tarjeta de una cita médica.
  */
-export function renderCitaCardHtml(cita, permisos = { agendar: true, atender: true, cancelar: true }) {
+export function renderCitaCardHtml(cita, permisos = { agendar: true, atender: true, cancelar: true, usuarioActivo: null }) {
     const estadoInfo = ESTADOS_INFO[cita.estado] || ESTADOS_INFO.PROGRAMADA;
     const esActiva = cita.estado === ESTADOS_CITA.PROGRAMADA || cita.estado === ESTADOS_CITA.EN_CURSO;
+    const esAsignado = AgendaService.esMedicoAsignado(cita, permisos.usuarioActivo);
+    const puedeAtenderEsta = permisos.atender && esAsignado;
 
     return `
         <div class="cita-card cita-status-${cita.estado.toLowerCase()}" data-cita-id="${cita.id}">
@@ -63,16 +65,22 @@ export function renderCitaCardHtml(cita, permisos = { agendar: true, atender: tr
                         </button>
                     ` : ''}
 
-                    ${permisos.atender && cita.estado === ESTADOS_CITA.PROGRAMADA ? `
+                    ${puedeAtenderEsta && cita.estado === ESTADOS_CITA.PROGRAMADA ? `
                         <button type="button" class="btn btn-sm btn-outline-warning btn-cita-change-state" data-cita-id="${cita.id}" data-new-state="${ESTADOS_CITA.EN_CURSO}">
                             🩺 Atender
                         </button>
                     ` : ''}
 
-                    ${permisos.atender && cita.estado === ESTADOS_CITA.EN_CURSO ? `
+                    ${puedeAtenderEsta && cita.estado === ESTADOS_CITA.EN_CURSO ? `
                         <button type="button" class="btn btn-sm btn-outline-success btn-cita-change-state" data-cita-id="${cita.id}" data-new-state="${ESTADOS_CITA.COMPLETADA}">
                             ✅ Concluir
                         </button>
+                    ` : ''}
+
+                    ${permisos.atender && esActiva && !esAsignado ? `
+                        <span class="cita-lock-note" title="Solo el especialista asignado puede atender o concluir esta interconsulta">
+                            🔒 Solo médico asignado
+                        </span>
                     ` : ''}
 
                     ${permisos.cancelar && esActiva ? `

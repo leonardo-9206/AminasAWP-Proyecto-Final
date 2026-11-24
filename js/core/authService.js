@@ -47,8 +47,8 @@ export const USUARIOS_PREDEFINIDOS = [
         nombre: 'Dra. Sofía Herrera',
         cedula: '1123489',
         rol: ROLES_HOSPITALARIOS.MEDICO_PEDIATRA,
-        rolLabel: 'Médico Pediatra de Guardia',
-        especialidad: 'Urgencias Pediátricas y Choque',
+        rolLabel: 'Cardióloga Pediatra',
+        especialidad: 'Cardiología Pediátrica e Interconsultas',
         avatar: '👩‍⚕️',
         turno: 'Vespertino',
         password: '1234'
@@ -70,7 +70,7 @@ export const USUARIOS_PREDEFINIDOS = [
         cedula: '1459203',
         rol: ROLES_HOSPITALARIOS.RESIDENTE,
         rolLabel: 'Médico Residente de Pediatría',
-        especialidad: 'Hospitalización y Piso Pediátrico',
+        especialidad: 'Seguimiento Post-UCIP y Hospitalización',
         avatar: '🩺',
         turno: 'Jornada Acumulada',
         password: '1234'
@@ -81,7 +81,7 @@ export const USUARIOS_PREDEFINIDOS = [
         cedula: '5521874',
         rol: ROLES_HOSPITALARIOS.RECEPCION,
         rolLabel: 'Recepción / Admisión',
-        especialidad: 'Control de Agenda y Admisión Pediátrica',
+        especialidad: 'Control de Agenda y Seguimiento Post-Egreso',
         avatar: '📋',
         turno: 'Matutino',
         password: '1234'
@@ -96,6 +96,17 @@ export const USUARIOS_PREDEFINIDOS = [
         avatar: '🛡️',
         turno: 'Administración General',
         password: 'admin123'
+    },
+    {
+        id: 7,
+        nombre: 'Dr. Carlos Méndez',
+        cedula: '6391042',
+        rol: ROLES_HOSPITALARIOS.MEDICO_PEDIATRA,
+        rolLabel: 'Neurólogo Pediatra',
+        especialidad: 'Neurología Pediátrica e Interconsultas',
+        avatar: '👨‍⚕️',
+        turno: 'Matutino',
+        password: '1234'
     }
 ];
 

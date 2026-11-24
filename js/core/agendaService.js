@@ -39,20 +39,21 @@ export const ESTADOS_INFO = {
 };
 
 export const MOTIVOS_SUGERIDOS = [
-    'Control y titulación de aminas vasoactivas',
-    'Ajuste de dosis y velocidad de infusión',
-    'Valoración hemodinámica general',
+    'Interconsulta de Cardiología Pediátrica (valoración hemodinámica)',
+    'Interconsulta de Neurología Pediátrica (sedoanalgesia y estado neurológico)',
+    'Control y titulación de aminas vasoactivas en UCIP',
     'Revisión y retiro de vía venosa central',
     'Control pre-alta de Terapia Intensiva (UCIP)',
-    'Seguimiento posquirúrgico cardiovascular',
-    'Monitoreo de sedoanalgesia y destete ventilatorio'
+    'Seguimiento post-egreso UCIP (consulta externa de control)',
+    'Seguimiento posquirúrgico cardiovascular'
 ];
 
 export const MEDICOS_DISPONIBLES = [
-    'Dr. Alejandro Morales (Pediatra General)',
-    'Dra. Sofía Herrera (Médico Intensivista UCIP)',
-    'Dr. Carlos Méndez (Cardiólogo Pediátrico)',
-    'Enf. Esp. Laura Valenzuela (Enfermera de Terapia)'
+    'Dr. Alejandro Morales — Terapia Intensiva Pediátrica (UCIP)',
+    'Dra. Sofía Herrera — Cardiología Pediátrica e Interconsultas',
+    'Dr. Carlos Méndez — Neurología Pediátrica e Interconsultas',
+    'Dra. Andrea Ruiz — Seguimiento Post-UCIP y Hospitalización',
+    'Enf. Esp. Laura Valenzuela — Infusiones Continuas y Vías Centrales'
 ];
 
 export class AgendaService {
@@ -104,14 +105,29 @@ export class AgendaService {
     }
 
     /**
-     * Genera la lista de profesionales que pueden atender citas a partir del catálogo de usuarios.
-     * Excluye al personal de Recepción. Si no hay usuarios, usa la lista de respaldo.
+     * Genera la lista de profesionales clínicos que pueden recibir interconsultas/citas.
+     * Excluye a Recepción y Administrador del Sistema.
      */
     static obtenerMedicosDisponibles(usuarios = []) {
         const lista = (Array.isArray(usuarios) ? usuarios : [])
-            .filter(u => u.rol !== 'RECEPCION')
+            .filter(u => u.rol !== 'RECEPCION' && u.rol !== 'ADMIN')
             .map(u => `${u.nombre} — ${u.especialidad}`);
         return lista.length > 0 ? lista : MEDICOS_DISPONIBLES;
+    }
+
+    /**
+     * Verifica si el usuario con sesión activa es exactamente el médico asignado a la cita.
+     * Solo el médico asignado puede marcarla como "En Consulta" o "Completada".
+     */
+    static esMedicoAsignado(cita, usuario) {
+        if (!cita || !usuario) return false;
+        if (cita.medicoId && usuario.id) {
+            return Number(cita.medicoId) === Number(usuario.id);
+        }
+        const medicoCita = String(cita.medicoResponsable || '').trim().toLowerCase();
+        const nombreUsuario = String(usuario.nombre || '').trim().toLowerCase();
+        if (!medicoCita || !nombreUsuario) return false;
+        return medicoCita.includes(nombreUsuario);
     }
 
     /**

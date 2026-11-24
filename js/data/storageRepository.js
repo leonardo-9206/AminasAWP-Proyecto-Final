@@ -94,10 +94,11 @@ export class StorageRepository {
                     id: 1,
                     pacienteId: 1,
                     pacienteNombre: 'Paciente 1',
+                    medicoId: 1,
                     medicoResponsable: 'Dr. Alejandro Morales — Terapia Intensiva Pediátrica (UCIP)',
                     fecha: hoy,
                     hora: '10:00',
-                    motivo: 'Control y titulación de aminas vasoactivas',
+                    motivo: 'Control y titulación de aminas vasoactivas en UCIP',
                     estado: 'PROGRAMADA',
                     notas: 'Evaluar descenso gradual de Dopamina según presión arterial media.'
                 },
@@ -105,12 +106,13 @@ export class StorageRepository {
                     id: 2,
                     pacienteId: 1,
                     pacienteNombre: 'Paciente 1',
-                    medicoResponsable: 'Dra. Sofía Herrera — Urgencias Pediátricas y Choque',
+                    medicoId: 2,
+                    medicoResponsable: 'Dra. Sofía Herrera — Cardiología Pediátrica e Interconsultas',
                     fecha: hoy,
                     hora: '14:30',
-                    motivo: 'Valoración hemodinámica y retiro de vía venosa central',
+                    motivo: 'Interconsulta de Cardiología Pediátrica (valoración hemodinámica)',
                     estado: 'PROGRAMADA',
-                    notas: 'Verificar tiempos de coagulación y plaquetas previos.'
+                    notas: 'Valoración ecocardiográfica en cama y ajuste de soporte inotrópico.'
                 }
             ];
             this.saveCitas(defaultCitas);
@@ -250,7 +252,8 @@ export class StorageRepository {
                 this.saveUsuarios(defaultUsers);
                 return defaultUsers;
             }
-            // Migración defensiva: inyectar usuario ADMIN si el catálogo guardado no tenía ninguno
+            // Migración defensiva: inyectar ADMIN y actualizar perfiles base de interconsulta si faltan
+            let modificado = false;
             const tieneAdmin = parsed.some(u => u.rol === 'ADMIN');
             if (!tieneAdmin) {
                 const defaultAdmin = defaultUsers.find(u => u.rol === 'ADMIN');
@@ -260,8 +263,25 @@ export class StorageRepository {
                         ? { ...defaultAdmin, id: maxId + 1 }
                         : defaultAdmin;
                     parsed.push(adminConId);
-                    this.saveUsuarios(parsed);
+                    modificado = true;
                 }
+            }
+            // Actualizar especialidad de Dra. Sofía Herrera si traía el texto antiguo
+            const sofia = parsed.find(u => u.cedula === '1123489');
+            if (sofia && sofia.especialidad === 'Urgencias Pediátricas y Choque') {
+                sofia.rolLabel = 'Cardióloga Pediatra';
+                sofia.especialidad = 'Cardiología Pediátrica e Interconsultas';
+                modificado = true;
+            }
+            // Inyectar Dr. Carlos Méndez (Neurólogo Pediatra) si no existe por cédula
+            const carlosDefault = defaultUsers.find(u => u.cedula === '6391042');
+            if (carlosDefault && !parsed.some(u => u.cedula === '6391042')) {
+                const maxId = parsed.reduce((m, u) => Math.max(m, parseInt(u.id, 10) || 0), 0);
+                parsed.push({ ...carlosDefault, id: maxId + 1 });
+                modificado = true;
+            }
+            if (modificado) {
+                this.saveUsuarios(parsed);
             }
             return parsed;
         } catch (e) {
